@@ -1,4 +1,3 @@
-import { WHITELIST_DOMAINS } from '~/utils/constants'
 import { env } from '~/config/environment'
 import { StatusCodes } from 'http-status-codes'
 import APIError from '~/utils/APIError'
@@ -6,13 +5,20 @@ import APIError from '~/utils/APIError'
 // CORS Options Configuration
 export const corsOptions = {
   origin: function (origin, callback) {
-    // if origin is undefined in dev mode pass the CORS
-    if (env.BUILD_MODE === 'dev') {
+    // Health checks and same-origin requests do not include an Origin header.
+    if (!origin || env.BUILD_MODE === 'dev') {
       return callback(null, true)
     }
 
-    // Check if the origin is in the whitelist
-    if (WHITELIST_DOMAINS.includes(origin)) {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      ...String(env.WEBSITE_DOMAIN_PRODUCTION || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ]
+
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true)
     }
 

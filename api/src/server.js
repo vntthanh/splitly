@@ -17,8 +17,9 @@ import { notificationSocket, setIoInstance } from '~/sockets/notificationSocket'
 
 const START_SERVER = () => {
   const app = express()
-  const hostname = env.APP_HOST || 'localhost'
-  const PORT = env.APP_PORT || 3000
+  // Cloud platforms provide PORT and require the server to listen on all interfaces.
+  const hostname = env.APP_HOST || '0.0.0.0'
+  const PORT = process.env.PORT || env.APP_PORT || 3000
 
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store')
@@ -67,7 +68,7 @@ const START_SERVER = () => {
     // Verify Brevo (for registration emails)
     const brevoReady = await BrevoEmailProvider.verifyConnection()
     if (!brevoReady) {
-      console.warn('⚠️  WARNING: Brevo is not configured. Registration emails will fail!')
+      console.warn('Ă¢ÂÂ Ă¯Â¸Â  WARNING: Brevo is not configured. Registration emails will fail!')
       console.warn('   Please check your BREVO_API_KEY environment variable')
     } else {
       console.log('6a.Brevo email service verified successfully!')
@@ -76,7 +77,7 @@ const START_SERVER = () => {
     // Verify Nodemailer/SMTP (for other emails)
     const smtpReady = await NodemailerProvider.verifyConnection()
     if (!smtpReady) {
-      console.warn('⚠️  WARNING: SMTP is not configured. Other emails may fail!')
+      console.warn('Ă¢ÂÂ Ă¯Â¸Â  WARNING: SMTP is not configured. Other emails may fail!')
       console.warn('   Please check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD')
     } else {
       console.log('6b.SMTP connection verified successfully!')
