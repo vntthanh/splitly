@@ -196,18 +196,18 @@ These terms must be used consistently in Vietnamese UI copy, stakeholder discuss
 
 | Term | Agreed business meaning |
 | --- | --- |
-| **Bill / Hóa đơn** | One shared expense record containing its total, payer, participants, allocation, and payment progress. |
-| **Payer / Người ứng tiền** | The single person who paid the supplier up front for this bill. This is not necessarily every person who consumed an item. |
-| **Participant / Thành viên tham gia** | A person included in the bill's allocation. Their obligation can be zero only when the selected split rule produces zero. |
-| **Amount owed / Số tiền phải trả** | The participant's final allocated responsibility after adjustment and rounding. |
-| **Amount paid / Số tiền đã trả** | The cumulative amount recorded as paid by that participant toward the bill. |
-| **Remaining amount / Số tiền còn lại** | `amountOwed − amountPaid`, never below zero. |
-| **Equal split / Chia đều** | The confirmed bill total is divided among selected participants using the deterministic rounding rule. |
-| **By person / Chia theo người** | The creator enters final amounts or relative consumption for participants; final amounts must still equal the confirmed total. |
-| **By item / Chia theo món** | One or more participants are assigned to each item; shared items are divided among their assigned people and any bill-level adjustment is distributed proportionally. |
-| **Settled / Đã tất toán** | Every eligible, non-opted-out participant has paid at least their amount owed. It does not prove that a bank transfer happened automatically. |
-| **Opt out / Từ chối hóa đơn** | A securely verified participant disputes their inclusion and is excluded from the app's outstanding-debt view; the action remains auditable. |
-| **OCR draft / Bản nháp OCR** | Editable data extracted from a receipt image. It is not a confirmed financial record until the creator reviews, allocates, validates, and saves it. |
+| **Bill** | One shared expense record containing its total, payer, participants, allocation, and payment progress. |
+| **Payer** | The single person who paid the supplier up front for this bill. This is not necessarily every person who consumed an item. |
+| **Participant** | A person included in the bill's allocation. Their obligation can be zero only when the selected split rule produces zero. |
+| **Amount owed** | The participant's final allocated responsibility after adjustment and rounding. |
+| **Amount paid** | The cumulative amount recorded as paid by that participant toward the bill. |
+| **Remaining amount** | `amountOwed − amountPaid`, never below zero. |
+| **Equal split** | The confirmed bill total is divided among selected participants using the deterministic rounding rule. |
+| **By person** | The creator enters final amounts or relative consumption for participants; final amounts must still equal the confirmed total. |
+| **By item** | One or more participants are assigned to each item; shared items are divided among their assigned people and any bill-level adjustment is distributed proportionally. |
+| **Settled** | Every eligible, non-opted-out participant has paid at least their amount owed. It does not prove that a bank transfer happened automatically. |
+| **Opt out** | A securely verified participant disputes their inclusion and is excluded from the app's outstanding-debt view; the action remains auditable. |
+| **OCR draft** | Editable data extracted from a receipt image. It is not a confirmed financial record until the creator reviews, allocates, validates, and saves it. |
 
 ### 9.2 Business-value map
 
