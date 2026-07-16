@@ -1,8 +1,8 @@
-# Splitly — TV4: Product Backlog and Acceptance Criteria
+# Splitly — Product Backlog and Acceptance Criteria
 
 ## 1. Purpose
 
-This document turns the TV3 current and future workflows into development-ready, testable requirements. It is the TV4 baseline for planning, implementation, prototype review, and test design.
+This document turns the pre-Splitly As-Is analysis and the proposed target workflow into development-ready, testable requirements. It is a prospective baseline for a new build; it does not claim that repository features are complete.
 
 The document defines the baseline for planning, implementation, prototype review, and testing.
 
@@ -10,9 +10,9 @@ The document defines the baseline for planning, implementation, prototype review
 
 | Scope | Decision |
 | --- | --- |
-| **Current release / TV3 baseline** | Authenticated users create a bill manually, choose one payer and participants, split it equally/by person/by item, save it, review its status, record payment, and send reminders. Group, dashboard, report, activity, and notification capabilities support this flow. |
-| **Future release / AI-assisted flow** | Receipt upload, OCR extraction, editable draft review, correction, and manual fallback. The user still chooses payer, participants, and allocation method. |
-| **Explicitly out of scope for this baseline** | Multiple payers on one bill, cross-bill/group net settlement, automatic bank-transfer verification, group fund/wallet, guest lifecycle, recurring bills, exports, and AI payer recommendation. They must not be inferred from older reference documents as current commitments. |
+| **MVP core increment** | Authentication, groups/members, manual bill entry, one payer and selected participants, equal/by-person/by-item splitting, validation, bill detail/history, VietQR assistance, payment declaration/confirmation, creditor reminders, and essential notifications. |
+| **MVP Gemini increment** | JPG/JPEG, PNG, or WebP receipt upload up to 10 MB; Gemini 2.5 Flash extraction; editable draft review/correction; and manual fallback. The user still chooses payer, participants, and allocation method. |
+| **Post-MVP backlog** | PDF receipt input, TingTing chatbot, advanced reports, cross-bill/group debt simplification, AI payer recommendation, multiple payers, automatic bank verification, wallet/payment gateway, recurring bills, exports, multi-currency, and a separate broker/microservice messaging platform. The MongoDB outbox and notification worker remain part of the MVP architecture. |
 
 ### 1.2 Business rules used by all bill stories
 
@@ -25,7 +25,7 @@ The document defines the baseline for planning, implementation, prototype review
 
 ## 2. Product backlog
 
-Priority: **P0** = required for the current demonstrable flow; **P1** = important supporting capability; **P2** = approved future/OCR scope. Estimates are story points, not elapsed time. Total estimate: **107 points**.
+Priority: **P0** = essential MVP flow; **P1** = supporting MVP capability; **P2** = post-MVP candidate. Estimates are relative story points, not elapsed time. The team must select a viable subset within its 120-person-day capacity rather than equating points directly to hours.
 
 | ID | Epic | Feature | User story | Priority | Estimate | Acceptance criteria | Dependency |
 | --- | --- | --- | --- | --- | ---: | --- | --- |
@@ -42,14 +42,14 @@ Priority: **P0** = required for the current demonstrable flow; **P1** = importan
 | US-SPLIT-11 | E4 Payments | Partial and full payment | As a participant, I want to record a partial or full payment, so that the outstanding balance is accurate. | P0 | 5 | AC-11 | US-SPLIT-10; payment API |
 | US-SPLIT-12 | E4 Payments | Payment confirmation link | As a debtor, I want to open a secure payment request and see the amount and recipient details, so that I can make or request confirmation of payment. | P1 | 5 | AC-12 | US-SPLIT-11; token/email service |
 | US-SPLIT-13 | E4 Payments | Payment reminder | As a creditor, I want to remind an unpaid participant, so that overdue payments are followed up consistently. | P1 | 5 | AC-13 | US-SPLIT-10; notification/email service |
-| US-SPLIT-14 | E4 Payments | Opt out | As an incorrectly added participant, I want to opt out of a bill through a valid secure link, so that it no longer appears as my debt. | P1 | 3 | AC-14 | US-SPLIT-09; opt-out token |
+| US-SPLIT-14 | E4 Payments | Opt out | As an incorrectly added participant, I want to opt out of a bill through a valid secure link, so that it no longer appears as my debt. | P2 | 3 | AC-14 | Post-MVP; US-SPLIT-09; opt-out token |
 | US-SPLIT-15 | E5 Insights | Personal dashboard | As a user, I want to see monthly spending and amounts owed/to receive, so that I can act on my finances. | P1 | 5 | AC-15 | Bills and payment status |
-| US-SPLIT-16 | E5 Insights | Monthly report | As a user, I want a monthly spending report by trend and category, so that I can understand my expense pattern. | P1 | 8 | AC-16 | Categorised bills; report API |
-| US-SPLIT-17 | E6 Transparency | Activity and notifications | As an affected user, I want visible bill events and notifications, so that changes and reminders are traceable. | P1 | 5 | AC-17 | Bill/payment/group events; socket/notification service |
-| US-SPLIT-18 | E7 AI receipt input | Upload and validate receipt | As a bill creator, I want to upload a supported receipt image, so that the system can prepare a draft safely. | P2 | 5 | AC-18 | US-SPLIT-01; image validation; OCR provider |
-| US-SPLIT-19 | E7 AI receipt input | Extract draft | As a bill creator, I want OCR to extract receipt fields and items into an editable draft, so that I type less information. | P2 | 8 | AC-19 | US-SPLIT-18; OCR provider |
-| US-SPLIT-20 | E7 AI receipt input | Review and correct draft | As a bill creator, I want to correct OCR results before allocation, so that an OCR error cannot become a wrong bill. | P2 | 5 | AC-20 | US-SPLIT-19; US-SPLIT-05–09 |
-| US-SPLIT-21 | E7 AI receipt input | Failure and manual fallback | As a bill creator, I want a clear retry and manual-entry path when OCR fails, so that I can still finish the bill. | P2 | 3 | AC-21 | US-SPLIT-18; manual bill flow |
+| US-SPLIT-16 | E5 Insights | Advanced monthly report | As a user, I want a monthly spending report by trend and category, so that I can understand my expense pattern. | P2 | 8 | AC-16 | Post-MVP; categorised bills; report API |
+| US-SPLIT-17 | E6 Transparency | Activity and notifications | As an affected user, I want visible bill events and notifications, so that changes and reminders are traceable. | P1 | 5 | AC-17 | Bill/payment/group events; transactional outbox; notification worker |
+| US-SPLIT-18 | E7 AI receipt input | Upload and validate receipt | As a bill creator, I want to upload a supported receipt image, so that the system can prepare a draft safely. | P0 | 5 | AC-18 | US-SPLIT-01; image validation; Gemini adapter |
+| US-SPLIT-19 | E7 AI receipt input | Extract draft | As a bill creator, I want Gemini 2.5 Flash to extract receipt fields and items into an editable draft, so that I type less information. | P0 | 8 | AC-19 | US-SPLIT-18; Gemini adapter |
+| US-SPLIT-20 | E7 AI receipt input | Review and correct draft | As a bill creator, I want to correct extracted results before allocation, so that an AI error cannot become a wrong bill. | P0 | 5 | AC-20 | US-SPLIT-19; US-SPLIT-05–09 |
+| US-SPLIT-21 | E7 AI receipt input | Failure and manual fallback | As a bill creator, I want a clear retry and manual-entry path when Gemini processing fails, so that I can still finish the bill. | P0 | 3 | AC-21 | US-SPLIT-18; manual bill flow |
 
 ## 3. Acceptance criteria
 
@@ -73,9 +73,9 @@ All examples below use VND. “Allocated total” means the final sum of partici
 | AC-14 | US-SPLIT-14 | **Given** a participant opens their valid opt-out link, **when** they confirm opt-out, **then** they are excluded from their outstanding-debt view and an opt-out activity is recorded. **When** the token is invalid or belongs to another user, **then** no participant status changes. |
 | AC-15 | US-SPLIT-15 | **Given** the user has bills in the current and previous month, **when** they open the dashboard, **then** it shows current-month spending, change from the previous month, amounts owed/to receive, and recent relevant activity from the same underlying bill/payment data. |
 | AC-16 | US-SPLIT-16 | **Given** a user selects a month, **when** the report loads, **then** bill count, total spending, unpaid debt, overdue count, spending trend, and category breakdown are calculated from that user's accessible bills. **When** there is no data for the month, **then** a zero/empty state is shown rather than stale data. |
-| AC-17 | US-SPLIT-17 | **Given** a bill is created, paid, settled, opted out of, deleted, or reminded, **when** the related operation succeeds, **then** the relevant activity is recorded and eligible affected users receive a notification. **When** a user opens the activity/notification view, **then** only their permitted events are visible. |
-| AC-18 | US-SPLIT-18 | **Given** the creator supplies a BMP, PNG, JPEG, or WEBP receipt image no larger than **20 MB**, **when** they start scanning, **then** the system verifies the actual MIME type, rejects images with a short side under 4 px or ratio over 5:1, and scales a long side over 2240 px before OCR. **When** validation fails, **then** scanning does not start and the user can replace the file or enter manually. |
-| AC-19 | US-SPLIT-19 | **Given** a validated receipt, **when** the OCR provider returns a result, **then** the system creates an editable draft containing every available merchant/bill name, date, category, line item name, quantity, unit price, line amount, subtotal, tax, discount, total, and payment method. **When** a field is missing or uncertain, **then** it is visibly marked rather than invented. |
+| AC-17 | US-SPLIT-17 | **Given** a bill is created, paid, settled, deleted, or reminded, **when** the related operation succeeds, **then** the business state and outbox event commit atomically. **When** the worker handles the event, **then** the relevant activity/notification is created idempotently for eligible users. **When** delivery fails, **then** the event remains retryable without rolling back or duplicating the financial operation. |
+| AC-18 | US-SPLIT-18 | **Given** the creator supplies a JPG/JPEG, PNG, or WebP receipt image no larger than **10 MB**, **when** they start scanning, **then** the system verifies the actual MIME type and applies the approved dimension/aspect-ratio safety rules before Gemini processing. **When** the format, size, or image validation fails, **then** scanning does not start and the user can replace the file or enter manually. PDF is rejected with a clear post-MVP message. |
+| AC-19 | US-SPLIT-19 | **Given** a validated receipt, **when** Gemini 2.5 Flash returns a result, **then** the system creates an editable draft containing each available merchant/bill name, date, category, line item name, quantity, unit price, line amount, subtotal, tax, discount, and total. **When** a field is missing or uncertain, **then** it is visibly marked rather than invented. |
 | AC-20 | US-SPLIT-20 | **Given** an OCR draft with an uncertain price or missing item, **when** the creator edits, adds, or removes values and confirms them, **then** the corrected values carry into the normal Create Bill form. **When** the creator attempts to save with unresolved mandatory data or an allocation mismatch, **then** normal AC-05 to AC-09 validation blocks the save. |
 | AC-21 | US-SPLIT-21 | **Given** OCR times out, is unavailable, or returns invalid content, **when** processing ends, **then** the user sees an understandable error and can retry, replace the image, or choose manual entry. No bill is created from a failed scan. |
 
@@ -87,9 +87,9 @@ The KPI targets are measured from the baseline sprint. Events exclude test accou
 | --- | --- | --- | --- | --- |
 | K1 Bill creation completion | `valid_bill_saved / bill_create_started`; events: `bill_create_started`, `bill_saved` | ≥ 90% monthly | Weekly | Finds form/validation friction. |
 | K2 Financial allocation integrity | `saved_bills where sum(amountOwed) = totalAmount / saved_bills` | 100% | Per release and daily monitor | Guards the core financial invariant. |
-| K3 Manual entry time | Median from `bill_create_started` to `bill_saved` for manual flow | ≤ 3 minutes | Monthly | Measures the current workflow bottleneck. |
-| K4 OCR usable-draft rate | `ocr_drafts_continued_to_review / successful_ocr_scans` | ≥ 85% | Weekly after OCR release | Measures extraction usefulness, not unreviewed accuracy. |
-| K5 OCR-to-saved-bill rate | `bills_saved_from_ocr / ocr_scans_started` | ≥ 65% | Weekly after OCR release | Reveals whether scanning reduces effort. |
+| K3 Manual entry time | Median from `bill_create_started` to `bill_saved` for manual flow | Establish during UAT; proposed target ≤ 3 minutes | Per UAT cycle | Measures the baseline/fallback workflow. |
+| K4 Gemini usable-draft rate | `ai_drafts_continued_to_review / successful_receipt_scans` | Establish during POC; proposed target ≥ 85% | Weekly after integration | Measures extraction usefulness, not unreviewed accuracy. |
+| K5 Scan-to-saved-bill rate | `bills_saved_from_scan / receipt_scans_started` | Establish during UAT; proposed target ≥ 65% | Weekly after integration | Reveals whether scanning reduces effort. |
 | K6 Payment follow-up conversion | `debts with full/partial payment within 7 days of reminder / reminders_sent` | ≥ 30% | Monthly | Tests reminder value. |
 | K7 Settlement latency | Median days from bill creation to settlement | Baseline first; improve by 15% | Monthly | Shows whether payment tracking helps groups settle. |
 | K8 Notification reliability | `successfully delivered notifications / notification attempts`, tracked by channel | ≥ 98% provider acceptance | Weekly | Prevents silent loss of reminders and bill events. |
@@ -109,7 +109,7 @@ A user story is Done only when all applicable conditions below are true:
 - Required activity/metric events are emitted without leaking receipt image data, tokens, bank account details, or other secrets.
 - The relevant backlog row, acceptance criteria, prototype reference, test case, and traceability matrix are updated; known limitations are recorded rather than hidden.
 
-For OCR stories additionally:
+For Gemini receipt stories additionally:
 
 - The original receipt is never treated as a confirmed bill without user review.
 - Supported format/size/resize rules are identical in the UI, API, help text, and tests.
@@ -117,27 +117,27 @@ For OCR stories additionally:
 
 ## 6. Requirement Traceability Matrix
 
-Problem IDs: `P1` calculation/transcription errors; `P2` unclear reimbursement status; `P3` awkward follow-up; `P4` repeated group setup; `P5` lack of visibility/audit trail; `P6` OCR effort, reliability, and privacy risk. Workflow step IDs and screen IDs refer to the approved TV3 workflow and prototype documents.
+Problem IDs: `P1` calculation/transcription errors; `P2` unclear reimbursement status; `P3` awkward follow-up; `P4` repeated group setup; `P5` lack of visibility/audit trail; `P6` AI extraction effort, reliability, and privacy risk. `CS-*` identifiers refer to the manual-entry comparison baseline, `FS-*` identifiers refer to the Gemini-assisted target workflow, and `C*`/`F*` refer to the matching prototype screens. These are planning baselines, not claims about an operating product.
 
 | Problem | Workflow | Feature | User story | Acceptance criteria | Prototype screen | Test case |
 | --- | --- | --- | --- | --- | --- | --- |
-| P5 | CS-01 | Register and sign in | US-SPLIT-01 | AC-01 | C01 / F01 (authenticated entry) | TC-AUTH-01 |
-| P4, P5 | CS-02, CS-05 | Profile | US-SPLIT-02 | AC-02 | C01 (account context) | TC-PROFILE-01 |
-| P4 | CS-02, CS-05 | Create group | US-SPLIT-03 | AC-03 | C01, C05 | TC-GRP-01 |
-| P4 | CS-05 | Manage members | US-SPLIT-04 | AC-04 | C05, F07 | TC-GRP-02 |
-| P1, P4 | CS-03–CS-06 | Bill setup, payer, participants | US-SPLIT-05 | AC-05 | C03–C06; F07 | TC-BILL-01 |
-| P1 | CS-07A | Equal split | US-SPLIT-06 | AC-06 | C06, C09 | TC-SPLIT-01 |
-| P1 | CS-07B | By-person split | US-SPLIT-07 | AC-07 | C06, C09 | TC-SPLIT-02 |
-| P1 | CS-07C, CS-08 | By-item split | US-SPLIT-08 | AC-08 | C07–C09; F08–F09 | TC-SPLIT-03, TC-SPLIT-04 |
-| P1, P5 | CS-09, CS-10 | Validate and save | US-SPLIT-09 | AC-09 | C09–C10; F09–F10 | TC-BILL-02 |
-| P2, P5 | CS-11 | History and detail | US-SPLIT-10 | AC-10 | C10, F10 | TC-BILL-03 |
-| P2 | CS-12 | Partial and full payment | US-SPLIT-11 | AC-11 | C11 | TC-PAY-01 |
-| P2 | CS-12 | Payment confirmation link | US-SPLIT-12 | AC-12 | C11 | TC-PAY-02 |
-| P3, P5 | CS-13 | Payment reminder | US-SPLIT-13 | AC-13 | C11 | TC-PAY-03 |
-| P2, P5 | CS-11–CS-12 | Opt out | US-SPLIT-14 | AC-14 | C10–C11 | TC-PAY-04 |
-| P5 | CS-01, CS-11 | Personal dashboard | US-SPLIT-15 | AC-15 | C01 | TC-INS-01 |
-| P5 | CS-11 | Monthly report | US-SPLIT-16 | AC-16 | No dedicated TV3 prototype screen | TC-INS-02 |
-| P3, P5 | CS-10–CS-13 | Activity and notifications | US-SPLIT-17 | AC-17 | C10–C11, F10 | TC-NOTI-01 |
+| P5 | CS-01; FS-01 | Register and sign in | US-SPLIT-01 | AC-01 | C01 / F01 (authenticated entry) | TC-AUTH-01 |
+| P4, P5 | CS-02, CS-05; FS-09 | Profile | US-SPLIT-02 | AC-02 | C01 (account context) | TC-PROFILE-01 |
+| P4 | CS-02, CS-05; FS-09 | Create group | US-SPLIT-03 | AC-03 | C01, C05 | TC-GRP-01 |
+| P4 | CS-05; FS-09 | Manage members | US-SPLIT-04 | AC-04 | C05, F07 | TC-GRP-02 |
+| P1, P4 | CS-03–CS-06; FS-09–FS-10 | Bill setup, payer, participants | US-SPLIT-05 | AC-05 | C03–C06; F07 | TC-BILL-01 |
+| P1 | CS-07A; FS-11A | Equal split | US-SPLIT-06 | AC-06 | C06, C09 | TC-SPLIT-01 |
+| P1 | CS-07B; FS-11B | By-person split | US-SPLIT-07 | AC-07 | C06, C09 | TC-SPLIT-02 |
+| P1 | CS-07C, CS-08; FS-11C | By-item split | US-SPLIT-08 | AC-08 | C07–C09; F08–F09 | TC-SPLIT-03, TC-SPLIT-04 |
+| P1, P5 | CS-09–CS-10; FS-12–FS-13 | Validate and save | US-SPLIT-09 | AC-09 | C09–C10; F09–F10 | TC-BILL-02 |
+| P2, P5 | CS-11; FS-14 | History and detail | US-SPLIT-10 | AC-10 | C10, F10 | TC-BILL-03 |
+| P2 | CS-12; FS-15 | Partial and full payment | US-SPLIT-11 | AC-11 | C11 | TC-PAY-01 |
+| P2 | CS-12; FS-15 | Payment confirmation link | US-SPLIT-12 | AC-12 | C11 | TC-PAY-02 |
+| P3, P5 | CS-13; FS-16 | Payment reminder | US-SPLIT-13 | AC-13 | C11 | TC-PAY-03 |
+| P2, P5 | CS-11–CS-12; FS-14–FS-15 | Opt out | US-SPLIT-14 | AC-14 | C10–C11 | TC-PAY-04 |
+| P5 | CS-01, CS-11; FS-14 | Personal dashboard | US-SPLIT-15 | AC-15 | C01 | TC-INS-01 |
+| P5 | Post-MVP | Advanced monthly report | US-SPLIT-16 | AC-16 | No dedicated prototype screen | TC-INS-02 |
+| P3, P5 | CS-10–CS-13; FS-13–FS-16 | Activity and notifications | US-SPLIT-17 | AC-17 | C10–C11, F10 | TC-NOTI-01 |
 | P6 | FS-02–FS-05 | Upload and validate receipt | US-SPLIT-18 | AC-18 | F02–F04 | TC-OCR-01 |
 | P6 | FS-06–FS-07 | Extract draft | US-SPLIT-19 | AC-19 | F04–F05 | TC-OCR-02 |
 | P1, P6 | FS-08–FS-13 | Review and correct draft | US-SPLIT-20 | AC-20 | F05–F09 | TC-OCR-03 |
@@ -166,8 +166,8 @@ The following are the minimum acceptance-level test cases. They can be expanded 
 | TC-PAY-04 | Use valid and invalid opt-out links. | Valid participant is excluded from debt views and activity is logged; invalid link has no effect. |
 | TC-INS-01 | Load dashboard with known monthly bills/debts. | Spending, comparison, owed/to-receive, and recent activity match source bill/payment data. |
 | TC-INS-02 | Load report for populated month and empty month. | Metrics/trend/category values match data; empty month shows an empty/zero state. |
-| TC-NOTI-01 | Create, pay, settle, opt out, delete, and remind on a test bill. | Eligible users receive only relevant notifications; each successful event is traceable. |
-| TC-OCR-01 | Upload accepted and rejected images: MIME spoof, >20 MB, long side >2240 px, short side <4 px, ratio >5:1. | Only valid inputs reach provider; valid large images are resized; rejected inputs offer safe recovery. |
+| TC-NOTI-01 | Create, pay, settle, delete, and remind on a test bill; stop and restart the worker; replay one claimed event. | Business operations commit with outbox events; eligible users receive only relevant notifications; backlog resumes after restart; replay creates no duplicate notification or financial change. |
+| TC-OCR-01 | Upload accepted and rejected images: JPG/JPEG, PNG, WebP, PDF, MIME spoof, and files above 10 MB. | Only valid supported images reach Gemini; PDF/oversized/spoofed inputs are rejected and offer safe recovery. |
 | TC-OCR-02 | Scan a receipt with merchant, date, tax/discount, and several line items. | Editable draft contains available values; missing/uncertain values are clearly flagged. |
 | TC-OCR-03 | Correct a malformed OCR draft, assign people/items, then attempt save with mismatch. | Corrections reach bill form; normal bill validation prevents invalid persistence. |
 | TC-OCR-04 | Simulate provider timeout and malformed response. | User can retry/replace image/manual entry; no incomplete bill is saved. |
@@ -176,7 +176,7 @@ The following are the minimum acceptance-level test cases. They can be expanded 
 
 ```mermaid
 flowchart LR
-    P[Problem] --> W[TV3 workflow step]
+    P[Problem] --> W[Workflow step]
     W --> F[Feature]
     F --> US[User story]
     US --> AC[Acceptance criteria]
@@ -214,7 +214,7 @@ These terms must be used consistently in Vietnamese UI copy, stakeholder discuss
 | Objective | Customer/business value | Success signal | Backlog items |
 | --- | --- | --- | --- |
 | BV-01 Fair allocation | Reduces calculation errors and disputes about who consumed what. | K2 is 100%; fewer allocation corrections. | US-SPLIT-05–09 |
-| BV-02 Clear reimbursement | Makes each person's debt, payment, and settlement state visible. | K7 improves; users can identify remaining balance. | US-SPLIT-10–14 |
+| BV-02 Clear reimbursement | Makes each person's debt, payment, and settlement state visible. | K7 improves; users can identify remaining balance. | MVP: US-SPLIT-10–13; post-MVP: US-SPLIT-14 |
 | BV-03 Lower follow-up friction | Gives creditors a structured, auditable way to remind debtors. | K6 reminder conversion. | US-SPLIT-13, US-SPLIT-17 |
 | BV-04 Less repeated setup | Lets recurring social groups reuse member lists and profiles. | Reduced time to start a bill; group reuse feedback. | US-SPLIT-02–05 |
 | BV-05 Spending awareness | Turns bill data into actionable personal spending information. | Dashboard/report usage and report accuracy checks. | US-SPLIT-15–16 |
@@ -239,9 +239,10 @@ The **Product Backlog** is the complete ordered set in Section 2. The **Release 
 
 | Release order | Release outcome / business value | Selected stories in planned order | Story points | Exit criterion |
 | --- | --- | --- | ---: | --- |
-| R1 — Viable manual expense sharing | Users can securely create, divide, save, view, pay, and follow up on a shared expense. | US-SPLIT-01, US-SPLIT-05, US-SPLIT-06, US-SPLIT-07, US-SPLIT-08, US-SPLIT-09, US-SPLIT-10, US-SPLIT-11, US-SPLIT-13 | 47 | A group can complete the CS-01–CS-13 flow and pass all linked R1 AC/test cases. |
-| R2 — Reuse, transparency, and insight | Users manage frequent groups, receive traceable notifications, and understand their spending. | US-SPLIT-02, US-SPLIT-03, US-SPLIT-04, US-SPLIT-12, US-SPLIT-14, US-SPLIT-15, US-SPLIT-16, US-SPLIT-17 | 39 | R1 remains regression-safe; R2 AC/test cases and data-access rules pass. |
-| R3 — AI-assisted bill-entry experiment | Users can scan a receipt, correct the draft, and safely fall back to manual entry. | US-SPLIT-18, US-SPLIT-19, US-SPLIT-20, US-SPLIT-21 | 21 | AC-18–AC-21, OCR-specific DoD, provider risk review, and privacy decision pass. |
+| R1 — Manual core increment | Users can securely create, divide, save, and view a shared expense. | US-SPLIT-01, US-SPLIT-05–10 | 37 | The proposed manual flow passes its linked AC/test cases and preserves the financial invariant. |
+| R2 — Group and settlement increment | Users reuse groups, obtain payment instructions, declare/confirm payments, send creditor reminders, and receive essential status evidence. | US-SPLIT-02–04, US-SPLIT-11–13, US-SPLIT-15, US-SPLIT-17 | 38 | R1 remains regression-safe; payment authorization, confirmation, reminder, and visibility cases pass. |
+| R3 — Gemini-assisted MVP increment | Users scan a supported receipt, correct the Gemini draft, and safely fall back to manual entry. | US-SPLIT-18–21 | 21 | AC-18–AC-21, Gemini-specific DoD, privacy review, and fallback tests pass. |
+| Post-MVP | Users gain advanced analysis, opt-out, and other deferred capabilities after validation. | US-SPLIT-14, US-SPLIT-16, plus the approved future backlog | 11+ | Requires separate prioritization and change approval; it is not an MVP exit dependency. |
 
 ```mermaid
 flowchart LR
@@ -251,8 +252,8 @@ flowchart LR
     D --> E[Review and pay]
     E --> F[Remind / settle]
     A -. R2 support .-> G[Profile and group]
-    D -. R2 support .-> H[Activity, dashboard, report]
-    B -. R3 alternative .-> I[Scan, review, correct receipt]
+    D -. R2 support .-> H[Activity and basic dashboard]
+    B -. R3 MVP alternative .-> I[Scan, review, correct receipt]
     I --> C
 ```
 
@@ -263,8 +264,9 @@ A packet is the bounded set of product/code components for a release item. It is
 | Packet | Backlog items | Likely components to change or verify | Primary responsibility |
 | --- | --- | --- | --- |
 | PKT-01 Account access | US-SPLIT-01–02 | User model/validation/controller/routes, auth middleware/JWT, Auth/Profile pages, user API client. | Development; QA verifies AC-01/02. |
-| PKT-02 Group roster | US-SPLIT-03–04 | Group model/validation/controller/routes, group pages/dialogs, participant/group search. | Development; TV4 confirms BV-04. |
+| PKT-02 Group roster | US-SPLIT-03–04 | Group model/validation/controller/routes, group pages/dialogs, participant/group search. | Development and QA verify BV-04 and linked acceptance criteria. |
 | PKT-03 Bill setup and allocation | US-SPLIT-05–09 | Bill validation/model/service/routes, `BillCreate`, `activeBillSlice`, payer/participant dialogs, three split components. | Development; QA executes TC-BILL-01/02 and TC-SPLIT-01–04. |
-| PKT-04 Bill lifecycle and payment | US-SPLIT-10–14 | History/detail views, debt/payment/confirmation controllers, payment token model/pages, reminder and opt-out flows. | Development; QA executes TC-BILL-03 and TC-PAY-01–04. |
-| PKT-05 Insight and transparency | US-SPLIT-15–17 | Dashboard/report/activity/notification APIs, pages, charts, sockets, notification delivery. | Development; QA executes TC-INS-01/02 and TC-NOTI-01. |
+| PKT-04 Bill lifecycle and payment | US-SPLIT-10–13 | History/detail views, debt/payment/confirmation controllers, payment token pages, and creditor reminder flow. | Development; QA executes TC-BILL-03 and TC-PAY-01–03. |
+| PKT-05 MVP transparency | US-SPLIT-15, US-SPLIT-17 | Essential dashboard, activity, notification APIs/pages, MongoDB outbox, worker handlers, Socket.IO/email delivery, retry and idempotency. | Development; QA executes TC-INS-01 and TC-NOTI-01. |
 | PKT-06 OCR-assisted entry | US-SPLIT-18–21 | OCR page/client, bill scan validation/service/provider, bill-draft parser, create-bill integration, image/privacy/error handling. | Development; QA executes TC-OCR-01–04; Product Owner approves release gate. |
+| PKT-07 Deferred capabilities | US-SPLIT-14, US-SPLIT-16 | Opt-out and advanced-report components after MVP acceptance. | Product Owner reprioritizes through post-MVP planning; they are not release dependencies. |

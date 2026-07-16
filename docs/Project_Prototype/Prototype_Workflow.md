@@ -7,7 +7,7 @@ The prototype must show two clearly separated workflows:
 1. **Current state:** manual bill entry.
 2. **Future state:** AI receipt scanning and automatic bill-form population.
 
-The future prototype should reuse downstream current-state screens to demonstrate a realistic product evolution rather than a completely separate product.
+These labels retain the team's original comparison structure. **Current state** means the manual-entry reference baseline, not an operating Splitly product. The future prototype should reuse downstream current-state screens to demonstrate a realistic proposed evolution rather than a completely separate product.
 
 ---
 
@@ -19,7 +19,7 @@ Minh has paid for dinner with five friends. Minh opens Splitly, manually enters 
 
 ### Future-State Story
 
-Minh has paid for dinner with five friends. Minh uploads a receipt photo. Splitly's AI extracts the restaurant, total, and line items. Minh reviews and fixes one uncertain item, selects the payer and participants, assigns items, validates the total, saves the bill, and tracks payment progress.
+Minh has paid for dinner with five friends. Minh uploads a receipt photo. Gemini 2.5 Flash prepares the restaurant, total, and line items as an editable draft. Minh reviews and fixes one uncertain item, selects the payer and participants, assigns items, validates the total, saves the bill, and tracks payment progress.
 
 ---
 
@@ -213,7 +213,7 @@ Required elements:
 
 - upload zone;
 - camera action;
-- supported formats;
+- supported formats: JPG/JPEG, PNG, and WebP, maximum 10 MB; PDF is post-MVP;
 - image-quality tips;
 - manual-entry link.
 
@@ -320,6 +320,5 @@ Optional future indicator:
 - “Created from receipt scan” badge;
 - receipt thumbnail or source reference.
 
-Do not add the badge unless TV4 and TV5 confirm it as a requirement.
 
 ![Screen F10 — Bill Detail](img/Prototype_Workflow-1784189449877.webp)

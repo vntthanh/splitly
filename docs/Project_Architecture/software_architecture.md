@@ -4,9 +4,9 @@
 
 Splitly is a responsive web application that turns a receipt into a transparent settlement: scan or enter a bill, verify the extracted data, assign items to participants, distribute tax/fees/discounts, calculate each share, and show who owes whom.
 
-The MVP uses a **modular monolith** rather than microservices. A React single-page application communicates with one Node.js/Express API, which organizes business capabilities into routes, controllers, services, and MongoDB models. MongoDB stores users, groups, bills, item allocations, payment state, activities, notifications, and transactional outbox events. Gemini 2.5 Flash, VietQR, and email are external adapters at the system boundary. Domain events and an asynchronous notification worker decouple bill/payment transactions from notification delivery; MongoDB remains the source of truth.
+The proposed MVP uses a **modular monolith** rather than microservices. A React single-page application communicates with one Node.js/Express API, which organizes business capabilities into routes, controllers, services, and MongoDB models. MongoDB stores users, groups, bills, item allocations, payment state, activities, notifications, and transactional outbox events. Gemini 2.5 Flash, VietQR, and email are external adapters at the system boundary. Business state and its event are committed atomically; a notification worker processes the outbox asynchronously so external delivery cannot reverse or falsify the committed bill/payment state.
 
-This is the best fit for the current team and product maturity: one backend codebase keeps transactions, debugging, testing, and operating cost manageable, while the API and worker processes can be scaled independently when measured load requires it.
+This is the best fit for a six-member, ten-week greenfield project: one backend codebase keeps transactions, debugging, testing, and operating cost manageable, while the API and worker run as separate processes from the same backend codebase. The worker improves reminder and payment-notification reliability without introducing microservices or a separate message broker.
 
 ## 2. Goals, Scope, and Architecture Drivers
 
@@ -32,7 +32,7 @@ This is the best fit for the current team and product maturity: one backend code
 
 * Debt summary, payment reminders, confirmation, and paid/unpaid status.
 
-* VietQR image generation, activity history, reports, email, and event-driven notifications.
+* VietQR image generation, activity history, essential dashboard status, email, and in-app/real-time notifications.
 
 ### 2.3 Out of scope for the MVP
 
@@ -47,6 +47,10 @@ This is the best fit for the current team and product maturity: one backend code
 * Long-term storage of receipt images.
 
 * Automatic acceptance of OCR results without user verification.
+
+* PDF receipt input, advanced reports, the TingTing chatbot, cross-bill debt simplification, and AI payer recommendation.
+
+* Separate message broker such as Kafka or RabbitMQ; the MVP uses MongoDB as the transactional outbox store.
 
 ### 2.4 Quality priorities
 
@@ -64,15 +68,15 @@ This is the best fit for the current team and product maturity: one backend code
 | ------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Application type          | Responsive web application/PWA-ready SPA                                 | One codebase covers phones and desktops and supports camera/file upload. Native-only capabilities and app-store distribution are not necessary for the MVP.                                      |
 | Backend style             | Modular monolith                                                         | Lowest operational overhead and easiest consistency model for a small team. Module boundaries allow later extraction without paying distributed-system cost now.                                 |
-| Frontend                  | React 19 + Vite, React Router, Redux Toolkit, MUI/Tailwind               | Matches the implemented UI, supports responsive forms and fast iteration. It requires disciplined state ownership to avoid duplicated calculations.                                              |
-| API                       | Node.js + Express 5 REST API                                             | Matches the implemented service and team language. HTTP controllers remain thin; domain work belongs in services.                                                                                |
-| Database                  | MongoDB                                                                  | Fits bill aggregates with embedded items and payment status and is already implemented. Cross-document workflows need explicit consistency handling and indexes.                                 |
-| Notification delivery     | Domain events, transactional outbox, and asynchronous worker             | Core transactions commit without waiting for email/in-app delivery. Persisted events support retry, idempotency, and failure recovery.                                                           |
+| Frontend                  | React + Vite, React Router, Redux Toolkit, MUI/Tailwind                  | Supports responsive forms and fast iteration. Exact compatible versions are frozen during project setup; disciplined state ownership avoids duplicated calculation rules.                        |
+| API                       | Node.js + Express REST API                                               | Uses one team language across web/API. HTTP controllers remain thin; domain work belongs in services.                                                                                             |
+| Database                  | MongoDB Atlas                                                            | Fits bill aggregates with embedded items and payment status. Cross-document workflows still need explicit consistency handling and indexes.                                                       |
+| Notification delivery     | Transactional outbox and asynchronous notification worker                | Bill/payment state and its notification intent commit atomically. The worker provides retry and idempotency without delaying the user-facing request.                                             |
 | OCR                       | Gemini 2.5 Flash API behind a provider adapter                           | Centralizes credentials and request mapping. OCR output is untrusted draft data and must be parsed, validated, and confirmed by a user.                                                          |
 | QR payment                | VietQR-generated QR image/instruction                                    | Speeds transfer entry without making Splitly a payment processor. Payment completion still requires confirmation.                                                                                |
-| Event-driven architecture | Durable domain events via a MongoDB transactional outbox                 | Bill/payment state and its event commit atomically; a worker claims events and creates notifications with retry and idempotency. A separate broker is unnecessary for MVP throughput.            |
-| Event sourcing            | Not used                                                                 | Current-state documents plus append-only activities meet traceability needs. Rebuilding all financial state from events would add schema evolution and operational complexity without MVP value. |
-| Deployment                | Separately built web and API on a VPS with PM2; MongoDB external/managed | Reflects the current CI/CD workflows. Docker is recommended for reproducible POC/production packaging but is not present in the current repository.                                              |
+| Event-driven architecture | Durable domain events through a MongoDB transactional outbox              | A worker claims events and creates notifications with retry and idempotency. A separate broker remains unnecessary for MVP throughput.                                                            |
+| Event sourcing            | Not used                                                                 | Canonical documents plus append-only activities meet MVP traceability needs. Rebuilding all financial state from events adds schema and operational complexity without MVP value.                  |
+| Deployment                | Vercel frontend; Render API and worker; MongoDB Atlas                     | Uses managed services while allowing the API and background worker to run independently. Render process availability, cost, and cold-start behavior must be verified before UAT.                    |
 
 ### 3.1 Technology stack baseline
 
@@ -82,13 +86,13 @@ This is the best fit for the current team and product maturity: one backend code
 | UI and state       | Material UI 7, Tailwind CSS 4, Redux Toolkit, Axios | Components/theme, client state, and HTTP access                             |
 | API                | Node.js 18+, Express 5, Babel                       | Versioned REST endpoints and application orchestration                      |
 | Validation/media   | Joi, `file-type`, Sharp                             | Request schemas, MIME inspection, and receipt resizing                      |
-| Data               | MongoDB Node.js driver 6, MongoDB/Atlas             | Canonical state, notifications, and transactional outbox events             |
+| Data               | MongoDB driver/ODM, MongoDB Atlas                    | Canonical state, notifications, and transactional outbox events              |
 | Identity           | JWT HS256, bcrypt, secure HTTP cookies              | Authentication and password protection                                      |
-| Async messaging    | MongoDB transactional outbox + Node.js worker       | Durable domain-event processing, retry, and notification delivery           |
-| AI/OCR             | Gemini 2.5 Flash API                                | Receipt extraction and assistant features                                   |
+| Async notifications| MongoDB transactional outbox + Node.js worker       | Durable event processing, retry, idempotency, and notification delivery      |
+| AI receipt input   | Gemini 2.5 Flash API                                | Structured receipt-draft extraction                                         |
 | Payment assistance | VietQR image/bank APIs                              | QR payment instructions; no fund custody                                    |
-| Messaging          | SMTP/Nodemailer and Brevo                           | Verification, reminders, and transactional email                            |
-| Delivery           | GitHub Actions, PM2, VPS                            | Build and process deployment; containerization remains a target improvement |
+| Messaging          | SMTP/Nodemailer-compatible provider                 | Verification, reminders, and transactional email                            |
+| Delivery           | GitHub Actions, Vercel, Render                      | Automated checks and managed frontend/backend deployment                     |
 
 ## 4. System Context
 
@@ -97,11 +101,11 @@ flowchart LR
     USER["Splitly user"] -->|HTTPS| WEB["Splitly responsive web app"]
     WEB -->|REST/JSON + secure cookie| API["Splitly application API"]
     WEB -->|Poll/refetch notification inbox| API
-    API -->|State + domain events| DB[("MongoDB + outbox")]
-    WORKER["Notification event worker"] -->|Claim events; persist notifications| DB
+    API -->|State + domain events| DB[("MongoDB Atlas + outbox")]
+    WORKER["Notification worker"] -->|Claim events; persist notifications| DB
     API -->|Receipt image, extraction prompt| GEMINI["Gemini 2.5 Flash API"]
     WEB -->|Bank code, account, amount| VIETQR["VietQR API/image service"]
-    WORKER -->|Transactional messages| MAIL["SMTP / Brevo email provider"]
+    WORKER -->|Transactional messages| MAIL["SMTP / email provider"]
 
     USER -.->|Verifies OCR and payment| WEB
 ```
@@ -126,24 +130,23 @@ flowchart TB
         SPA["React/Vite SPA\nMUI + Redux + Router"]
     end
 
-    subgraph VPS["Production VPS"]
-        WEBPROC["Static web/preview process\nPM2"]
-        APIPROC["Express API\nPM2"]
-        EVENTWORKER["Notification event worker\nPM2"]
-        WEBPROC --> APIPROC
+    subgraph Managed["Managed deployment"]
+        WEBPROC["Vercel\nReact static frontend"]
+        APIPROC["Render\nExpress API"]
+        EVENTWORKER["Render\nNotification worker"]
     end
 
     subgraph Data["Data services"]
-        MONGO[("MongoDB / Atlas\nApplication data + outbox")]
+        MONGO[("MongoDB Atlas\nApplication data + outbox")]
     end
 
     subgraph External["External providers"]
         GEMINI2["Gemini 2.5 Flash API"]
         QR2["VietQR"]
-        EMAIL2["SMTP / Brevo"]
+        EMAIL2["SMTP / email provider"]
     end
 
-    SPA -->|download assets| WEBPROC
+    WEBPROC -->|deliver static assets| SPA
     SPA -->|HTTPS REST| APIPROC
     APIPROC --> MONGO
     EVENTWORKER -->|Claim and acknowledge events| MONGO
@@ -152,11 +155,11 @@ flowchart TB
     EVENTWORKER --> EMAIL2
 ```
 
-The current GitHub Actions workflows build the API with Babel, build/serve the web application, and restart PM2 processes. The target deployment adds a separately managed worker process from the same backend codebase. Production hardening should put TLS termination/reverse proxy in front of the web/API processes, add independent API and worker health checks, deploy immutable artifacts or containers, and support rollback to the previous build.
+The proposed delivery pipeline runs tests and builds before deploying the frontend to Vercel and the API plus notification worker to Render. The API and worker use the same backend artifact but separate start commands and health/operational checks. MongoDB Atlas remains private to the backend processes. Environment secrets, CORS, worker liveness, outbox backlog, Render cold starts, service-plan limits, and rollback behavior must be verified before UAT.
 
 ## 6. Backend Module Design
 
-The API is one deployable application with internal layers:
+The backend is one deployable codebase with two process roles—the HTTP API and notification worker—and the following internal layers:
 
 ```mermaid
 flowchart LR
@@ -166,21 +169,21 @@ flowchart LR
     MODEL --> DB2[("MongoDB")]
     SVC --> PROVIDER["Provider adapters"]
     SVC --> OUTBOX["Transactional outbox"]
-    OUTBOX --> WORKER2["Event worker"]
+    OUTBOX --> WORKER2["Notification worker"]
     WORKER2 --> NOTIFY["Activity + notification handlers"]
 ```
 
 | Module              | Responsibilities                                                                 | Primary persisted data                                           |
 | ------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Identity            | Registration, verification, login/logout, profile, guest user                    | `users`                                                          |
+| Identity            | Registration, verification, login/logout, and profile                            | `users`                                                          |
 | Groups              | Group lifecycle, membership, group/bill association                              | `groups`                                                         |
-| Bills               | Bill validation, split calculation, item assignment, settlement state, opt-out   | `bills`                                                          |
-| Debts and payments  | Mutual debt view, reminders, payment submission and confirmation                 | `payment_reminders`, `payment_confirmations`, bill payment state |
+| Bills               | Bill validation, split calculation, item assignment, and settlement state         | `bills`                                                          |
+| Debts and payments  | Bill-level obligations, reminders, payment submission and confirmation           | `payment_reminders`, `payment_confirmations`, bill payment state |
 | Activity/history    | Human-readable audit trail and bill history                                      | `activities`                                                     |
-| Notifications       | Event handlers, persisted inbox, email dispatch, retry, and dead-letter handling | `notifications`, `outbox_events`                                 |
-| Reporting/dashboard | Derived monthly spending and debt summaries                                      | Reads bills/users; no separate source of truth                   |
-| AI assistant/OCR    | Gemini 2.5 Flash request orchestration and structured receipt draft              | No receipt image persistence in the target design                |
-| Providers           | JWT, Gemini, SMTP/Brevo, and future VietQR server adapter                        | Secrets in runtime configuration only                            |
+| Notifications       | Outbox handlers, persisted inbox, Socket.IO/email dispatch, retry, and failure state | `notifications`, `outbox_events`                              |
+| Dashboard           | Derived essential spending and debt-status summaries                              | Reads bills/users; no separate source of truth                   |
+| AI receipt input    | Gemini 2.5 Flash request orchestration and structured receipt draft              | No receipt image persistence in the target design                |
+| Providers           | JWT, Gemini, SMTP/email, and VietQR adapters                                      | Secrets in runtime configuration only                            |
 
 ### Dependency rules
 
@@ -189,10 +192,12 @@ flowchart LR
 3. Services own calculations, access-policy decisions, orchestration, and transaction boundaries.
 4. Models own schema validation, identifier conversion, indexes, and persistence queries.
 5. Provider-specific request/response formats remain behind adapters.
-6. Reports and dashboards derive data from canonical bill/payment records and do not mutate them.
-7. Services publish domain events by writing to the outbox in the same transaction as business state; workers own side effects and idempotent retries.
+6. Dashboard summaries derive data from canonical bill/payment records and do not mutate them; advanced reports are post-MVP.
+7. Services write a domain event to the outbox in the same transaction as authoritative business state. The worker owns external notification side effects and idempotent retries; it never recalculates or reapplies a payment.
 
 ### Notification event model
+
+The following domain events define notification intent. The API writes them to the MongoDB outbox and the worker handles them after the originating transaction commits.
 
 | Domain event               | Produced when                                 | Notification handler result                                      |
 | -------------------------- | --------------------------------------------- | ---------------------------------------------------------------- |
@@ -204,7 +209,7 @@ flowchart LR
 | `PaymentReminderRequested` | A creditor requests a reminder                | Create in-app notification and enqueue email delivery            |
 | `GroupMemberAdded`         | A member joins a group                        | Notify the new member and relevant group members                 |
 
-Delivery is **at least once**. Every outbox event has a unique `eventId`; each handler records that ID or uses a unique derived key so a retry cannot create duplicate notifications or apply a payment twice. Event payloads are versioned and contain references plus minimal display data, never raw receipt images, credentials, or full user records.
+Outbox delivery is **at least once**. Every event has a unique `eventId`; each handler records that ID or uses a unique derived key so a retry cannot create duplicate notifications or apply a payment twice. Payloads are versioned and contain references plus minimal display data, never raw receipt images, credentials, or full user records.
 
 ## 7. Core Runtime Flows
 
@@ -234,11 +239,11 @@ sequenceDiagram
     API->>Database: Commit bill and outbox event
     Database-->>API: Commit succeeds
     API-->>Web: Return bill and calculated shares
-    Worker->>Database: Claim bill-created event
-    Worker->>Database: Save notifications and mark event processed
+    Worker->>Database: Claim BillCreated event
+    Worker->>Database: Persist notifications and mark event processed
 ```
 
-**Important baseline gap:** the current `/v1/bills/scan` route validates the image but does not apply `authMiddleware.isAuthorized`. Production release requires authentication, ownership/rate checks, request timeout, and a normalized OCR response contract.
+**MVP security requirement:** the receipt-scan endpoint requires authentication, ownership and rate checks, a request timeout, upload validation, and a normalized Gemini response contract. These are acceptance requirements, not claims about an existing route.
 
 ### 7.2 Item allocation and charge distribution
 
@@ -249,7 +254,7 @@ itemBase[i] = quantity[i] * unitPrice[i]
 memberItemShare[i] = itemBase[i] / numberOfAssignedMembers[i]
 ```
 
-Let `subtotal` be the sum of item bases and `finalTotal` include tax, service fee, tip, and discount. The implemented backend currently uses an adjustment ratio for item-based splitting:
+Let `subtotal` be the sum of item bases and `finalTotal` include tax, service fee, tip, and discount. The proposed calculation uses an adjustment ratio for item-based splitting:
 
 ```text
 adjustmentRatio = finalTotal / subtotal
@@ -270,7 +275,7 @@ This proportionally distributes both surcharges and discounts according to consu
 
 * A submitted client total is advisory; the backend recalculates and rejects unexplained mismatches.
 
-**Required hardening:** the web currently multiplies `quantity * amount`, while the backend adjustment subtotal sums `item.amount` without quantity. Align the API contract to `unitPrice`, calculate `quantity * unitPrice` on the server, and add shared test fixtures before claiming item-based correctness.
+**Required contract:** use `unitPrice` consistently, calculate `quantity * unitPrice` on the server, and use the same fixtures for API and UI verification. The frontend may preview a result but cannot be the authoritative calculator.
 
 ### 7.3 Settle up
 
@@ -301,7 +306,7 @@ QR generation failure falls back to plain bank name, account number, amount, and
 
 ## 8. Data Design
 
-MongoDB documents follow aggregate boundaries; references use `ObjectId`. The detailed field list is maintained in [database.md](./database.md), while the minimum architecture-level model is:
+MongoDB documents follow aggregate boundaries and references use `ObjectId`. The minimum architecture-level model is self-contained below; detailed schemas must be derived and versioned during implementation.
 
 | Aggregate/collection           | Key fields                                                                                       | Notes                                                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
@@ -310,7 +315,7 @@ MongoDB documents follow aggregate boundaries; references use `ObjectId`. The de
 | Bill / `bills`                 | id, creatorId, payerId, participants, items, final total, split method, payment status, deadline | Canonical calculation and settlement aggregate. Embed the immutable calculation breakdown used at creation. |
 | Activity / `activities`        | actor, type, resource, safe details, timestamp                                                   | Append-only audit-oriented record; not event sourcing. Do not store secrets or raw receipt content.         |
 | Notification / `notifications` | recipient, actor, type, resource, read state, timestamp                                          | Created idempotently by event handlers and retrieved through the notification API.                          |
-| Outbox event / `outbox_events` | eventId, type, aggregateId, payload, status, attempts, availableAt, processedAt                  | Durable handoff from business transaction to asynchronous notification/activity handlers.                   |
+| Outbox event / `outbox_events` | eventId, type, aggregateId, version, payload, status, attempts, availableAt, processedAt          | Durable handoff from the business transaction to notification/activity handlers.                            |
 | Payment reminder               | token hash, debtor, creditor, expiry, usedAt                                                     | Token should be single-use, short-lived, and stored hashed.                                                 |
 | Payment confirmation           | payment reference, payer, recipient, amount, decision, timestamp                                 | Enforce uniqueness/idempotency for repeated callbacks/submissions.                                          |
 
@@ -318,7 +323,9 @@ MongoDB documents follow aggregate boundaries; references use `ObjectId`. The de
 
 * Business state and its outbox event are committed in one MongoDB transaction. Notification and activity handlers run after commit and do not delay the user-facing request.
 
-* A worker atomically claims an event, applies idempotent handlers keyed by `eventId`, and marks it processed. Transient failures use exponential backoff; exhausted events move to a dead-letter state for operator review.
+* A worker atomically claims an event, applies idempotent handlers keyed by `eventId`, and marks it processed. Transient failures use exponential backoff; exhausted events move to a failed/dead-letter state for review.
+
+* Payment submissions and confirmations use idempotency keys or unique business constraints. Retried events cannot mutate the monetary result twice.
 
 * Updates use resource filters that include the authorized user/group, not only `_id`.
 
@@ -331,7 +338,7 @@ MongoDB documents follow aggregate boundaries; references use `ObjectId`. The de
 The safest MVP policy is **transient processing**:
 
 1. The browser previews the selected file locally.
-2. The API accepts only BMP/PNG/JPEG/WebP, checks the real MIME signature, limits size/dimensions/aspect ratio, and resizes oversized input.
+2. The API accepts only JPG/JPEG, PNG, and WebP up to 10 MB, checks the real MIME signature, applies dimension/aspect-ratio limits, and resizes oversized dimensions when safe. PDF is rejected and remains post-MVP.
 3. The image is held in memory only long enough to call Gemini 2.5 Flash. It is not written to MongoDB, application logs, or permanent object storage.
 4. Only the user-verified structured fields needed for the bill are saved.
 5. Buffers and request references are released after success or failure; provider retention is governed by the provider agreement and disclosed in the privacy notice.
@@ -344,15 +351,15 @@ If future product requirements need image retention, use private object storage,
 | ------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Gemini 2.5 Flash    | Multimodal request returns a structured receipt draft          | Short timeout; at most one bounded retry with jitter for transient errors; return recoverable status; preserve user form; offer manual entry | Send receipt image and extraction prompt only; never send password, bank account, or unrelated group data |
 | VietQR              | Render QR from bank code/account, amount, and transfer content | Display copyable payment instructions; allow regeneration; never change payment state                                                        | Send only fields required to encode payment instruction                                                   |
-| SMTP/Brevo          | Send verification, reminder, and payment notifications         | Persist in-app notification; retry asynchronously; surface delivery status; do not roll back a valid bill                                    | Email address plus minimum message content                                                                |
-| Domain-event outbox | Deliver bill/payment events to notification handlers           | Retry with backoff; idempotent handler; dead-letter after the configured attempt limit; alert on event age                                   | Event payload contains identifiers and minimum display fields, not receipt images or secrets              |
+| SMTP/email          | Send verification, reminder, and payment notifications         | Persist in-app notification first; record delivery error; allow bounded idempotent retry; do not roll back a valid bill                       | Email address plus minimum message content                                                                |
+| Domain-event outbox | Deliver bill/payment events to notification handlers           | Retry with backoff; idempotent handler; failed/dead-letter state after the configured attempt limit; alert on event age                      | Event payload contains identifiers and minimum display fields, not receipt images or secrets              |
 | MongoDB             | Read/write canonical application state                         | Fail request safely; no false success; health monitoring, backups, and tested restore                                                        | Private network and least-privilege database user                                                         |
 
 Provider adapters must map errors to stable internal codes such as `OCR_UNAVAILABLE`, `OCR_INVALID_RESPONSE`, and `EMAIL_DELIVERY_DEFERRED`; raw provider responses and credentials must not reach the browser or logs.
 
 ## 11. API Design
 
-The API is versioned under `/v1`. Major resource families currently include users, groups, bills, debts, payment confirmation, activities, history, reports, dashboard, notifications, and assistant functions.
+The proposed API is versioned under `/v1`. MVP resource families include users, groups, bills, debts, payment confirmation, activities, history, dashboard status, notifications, and receipt scanning. Advanced reports and assistant functions are post-MVP.
 
 ### Contract conventions
 
@@ -370,11 +377,11 @@ The API is versioned under `/v1`. Major resource families currently include user
 
 * Error responses use stable codes and safe Vietnamese user messages; stack traces remain server-side.
 
-* `/v1/status` is a liveness check; add a readiness check for MongoDB and critical configuration.
+* `/v1/status` is the planned liveness check; a readiness check verifies MongoDB and critical configuration.
 
-### High-risk route review before production
+### High-risk route requirements before release
 
-Current code has public routes for OCR scanning, some history reads, AI assistant requests, guest creation, opt-out, payment submission/confirmation, and test email utilities. Some public token-based flows are intentional, but each needs purpose-specific signed/hashed tokens, expiry, rate limiting, and strict response minimization. Protect or remove diagnostic `/v1/test/*` routes in production.
+Receipt scanning, history, payment, reminder, and notification routes require authenticated resource authorization. Any intentionally public payment-confirmation flow requires a purpose-specific high-entropy token, hashed storage, expiry, single use, rate limiting, and minimal responses. Diagnostic or test-email routes must not be exposed in the release environment.
 
 ## 12. Security Architecture
 
@@ -386,7 +393,7 @@ Current code has public routes for OCR scanning, some history reads, AI assistan
 
 * Apply login, registration, OCR, AI, email, and token-verification rate limits.
 
-* Require verified identity for financial/group operations unless a narrowly scoped guest flow is explicitly designed.
+* Require verified identity for financial and group operations in the MVP.
 
 ### Authorization
 
@@ -421,7 +428,7 @@ Current code has public routes for OCR scanning, some history reads, AI assistan
 | Core API         | p95 under 500 ms for ordinary authenticated reads/writes, excluding external providers                |
 | Bill calculation | Under 200 ms for up to 100 items and 50 participants                                                  |
 | OCR              | User-visible progress; timeout within 30 seconds; manual fallback always available                    |
-| Availability     | Core manual bill/settlement records remain usable when OCR, email, event workers, or VietQR fails     |
+| Availability     | Core bill/settlement records remain usable when Gemini, email, the notification worker, or VietQR fails; queued events resume later |
 | Correctness      | 100% of calculation fixtures preserve `sum(shares) == finalTotal`; idempotent payment confirmation    |
 | Recovery         | Daily backup at minimum; documented and tested restore before production acceptance                   |
 | Accessibility    | Keyboard-operable forms/dialogs, labeled controls, readable errors, and WCAG AA color contrast target |
@@ -430,7 +437,7 @@ Current code has public routes for OCR scanning, some history reads, AI assistan
 
 * Structured logs with request/correlation ID, route, duration, status, internal error code, and provider latency.
 
-* Metrics for request/error rate, p95 latency, MongoDB pool health, OCR success/invalid/timeout rate, outbox queue depth/age, worker retries/dead letters, email delivery, and calculation invariant failures.
+* Metrics for request/error rate, p95 latency, MongoDB pool health, Gemini success/invalid/timeout rate, outbox depth/age, worker retries/failed events, email delivery, and calculation invariant failures.
 
 * Alerts on elevated 5xx rate, database unavailability, sustained OCR failure, and failed backup.
 
@@ -447,7 +454,7 @@ Current code has public routes for OCR scanning, some history reads, AI assistan
 | `/bills/:billId`, `/history`       | Explain bill and audit prior records                       | Bills/history/activity                                | Read-only cached shell; safe retry                     |
 | `/debt`                            | Show who owes whom and initiate settlement                 | Debt/payment services                                 | Plain payment instructions if QR fails                 |
 | `/payment/pay`, `/payment/confirm` | Token-scoped payment submission/confirmation               | Payment records and bill status                       | Expired/used token explanation; never double apply     |
-| `/dashboard`, `/reports`           | Derived spending/debt insights                             | Bills/report queries                                  | Show partial/empty state without mutating source data  |
+| `/dashboard`                       | Essential spending/debt status                             | Bills/dashboard queries                               | Show partial/empty state without mutating source data  |
 
 Workflow-to-feature traceability:
 
@@ -457,7 +464,7 @@ Workflow-to-feature traceability:
 | Scan/enter receipt         | Upload validation + Gemini adapter + manual form | Valid image becomes editable draft; provider failure does not block manual flow |
 | Assign a shared item       | Bill aggregate + allocation UI                   | N assignees receive equal base share unless another explicit rule is selected   |
 | Allocate VAT/fees/discount | Calculation service                              | Proportional distribution is explainable and exact after rounding               |
-| Record upfront payer       | Bill/payment state                               | Payer's own share is accounted for; others owe the payer/net creditors          |
+| Record upfront payer       | Bill/payment state                               | Payer's own share is accounted for; other participants owe the designated payer |
 | Settle and create QR       | Debt/payment module + VietQR                     | QR matches instruction; QR display alone never marks paid                       |
 | Track paid/unpaid          | Confirmation + activity + notification           | Repeated confirmation is idempotent and status is auditable                     |
 
@@ -503,8 +510,8 @@ Required evidence:
 2. Move all authoritative calculation to the backend and persist the breakdown.
 3. Complete resource authorization and protect/remove public diagnostic endpoints.
 4. Normalize OCR contract, add timeout/rate limit, and implement transient-image policy.
-5. Harden payment confirmation, QR fallback, notification outbox/retry, and observability.
-6. Containerize, add CI tests/security checks, and perform restore/load/usability tests.
+5. Harden payment confirmation, QR fallback, outbox/worker retry, and observability.
+6. Configure Vercel/Render/Atlas deployment, add CI tests/security checks, and perform restore/load/usability tests.
 
 ## 16. Risks, Constraints, and Mitigations
 
@@ -515,8 +522,8 @@ Required evidence:
 | External provider outage or quota                           | Scan/QR/email unavailable           | Timeouts, bounded retries, manual/plain fallback, quotas and alerts                                    |
 | Unauthorized cross-user access through path/body IDs        | Financial/privacy breach            | Actor from JWT, resource-scoped queries, authorization tests for every endpoint                        |
 | Public token reuse or guessing                              | Fraudulent settlement changes       | High-entropy hashed token, expiry, single use, rate limit, idempotent update, audit                    |
-| Event worker outage or growing outbox backlog               | Delayed notifications               | Independent worker health check, retry/backoff, queue-age alert, dead-letter review, and safe replay   |
-| Single API process/VPS                                      | Limited fault tolerance             | Health checks, PM2 restart, backup/restore, reverse proxy; add replicas only after measured need       |
-| MongoDB multi-document consistency                          | Partial activity/notification state | Transactions where needed; outbox and idempotent consumers; bill remains canonical                     |
+| Worker outage or growing outbox backlog                     | Delayed notifications                | Separate worker check, retry/backoff, queue-age alert, failed-event review, and safe replay |
+| Render API or worker cold start/outage                      | Slow API or delayed event processing | Health checks before demonstration, clear UI retry behavior, backlog monitoring, and paid-tier decision trigger |
+| MongoDB multi-document consistency                          | Partial activity/notification state | Keep the bill/payment record canonical, use transactions where required, and make retries idempotent  |
 | Premature microservice extraction                           | Delivery and operating overhead     | Keep module boundaries; extract only when independent scaling/ownership or reliability evidence exists |
 

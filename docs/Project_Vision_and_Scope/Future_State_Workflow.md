@@ -2,9 +2,9 @@
 
 ## 1. Workflow Definition
 
-The future state is the proposed AI-assisted workflow: **receipt scanning and automatic bill-form population followed by user review, bill splitting, and payment tracking**.
+The future state is the proposed Gemini-assisted workflow: **receipt scanning and automatic bill-form population followed by user review, bill splitting, and payment tracking**. It is a target design for the new build, not an already operating feature.
 
-The user uploads or captures a receipt image. AI extracts available bill information and creates an editable draft. The user must review and correct the extracted data before the bill can be saved.
+The user uploads or captures a receipt image. Gemini 2.5 Flash extracts available bill information and creates an editable draft. The user must review and correct the extracted data before the bill can be saved.
 
 Manual bill entry remains available as a fallback when the receipt is unsupported, the image quality is poor, or AI processing fails.
 
@@ -14,7 +14,7 @@ Manual bill entry remains available as a fallback when the receipt is unsupporte
 
 A group of friends finishes a meal. One member has paid the restaurant bill and uploads a receipt image to Splitly.
 
-The system uses AI to extract the bill title, date, total amount, and line items. The bill creator reviews the extracted information, corrects uncertain fields, selects the payer and participants, assigns items, and saves the confirmed bill.
+Gemini 2.5 Flash extracts the bill title, date, total amount, and line items. The bill creator reviews the extracted information, corrects uncertain fields, selects the payer and participants, assigns items, and saves the confirmed bill.
 
 Every participant can then view their assigned amount and payment status.
 
@@ -64,27 +64,21 @@ flowchart LR
 | FS-01 | User | 1. Opens the Splitly sign-in page.<br>2. Enters login credentials.<br>3. Submits the sign-in form. | Opens the protected application area. | Authentication remains a prerequisite rather than part of receipt processing. |
 | FS-02 | Bill creator | 1. Opens the Dashboard or Create Bill page.<br>2. Selects **Scan Receipt** as the bill-entry method.<br>3. Reviews the scanning instructions. | Displays the receipt-upload interface. | Manual entry must remain visible as an alternative. |
 | FS-03 | Bill creator | 1. Selects an image from the device or captures a new photo.<br>2. Ensures that the full receipt is visible.<br>3. Confirms the selected image. | Displays the receipt preview. | Camera support may vary between browsers and devices. |
-| FS-04 | System | 1. Checks the file format.<br>2. Checks the file size.<br>3. Verifies that the uploaded file can be processed as an image.<br>4. Displays an error when validation fails. | Accepts the image or requests a replacement. | Validation rules must be synchronized with TV4 and TV5. |
+| FS-04 | System | 1. Accepts JPG/JPEG, PNG, or WebP.<br>2. Rejects files larger than 10 MB.<br>3. Verifies that the uploaded file can be processed as an image.<br>4. Displays an error when validation fails. | Accepts the image or requests a replacement. | PDF receipt input is deferred to the post-MVP backlog. |
 | FS-05 | Bill creator | 1. Reviews the receipt preview.<br>2. Replaces or removes the image when necessary.<br>3. Selects **Scan** or **Process Receipt**. | Sends the confirmed image for AI processing. | The interface should warn users about blur, glare, cropping, and unreadable text. |
-| FS-06 | System / AI service | 1. Receives the receipt image.<br>2. Detects receipt text and layout.<br>3. Identifies available bill fields.<br>4. Extracts line items and amounts.<br>5. Returns a structured draft. | Produces extracted bill information or an error result. | OCR provider, response schema, latency, and accuracy must be confirmed with TV5 and TV6. |
-| FS-07 | System | 1. Maps the AI response to the Splitly bill form.<br>2. Pre-fills supported fields.<br>3. Creates item rows from extracted line items.<br>4. Marks missing or uncertain information. | Displays an editable AI-generated bill draft. | The exact supported fields must be synchronized with TV4 and TV5. |
+| FS-06 | System / Gemini 2.5 Flash | 1. Receives the receipt image.<br>2. Interprets receipt text and layout.<br>3. Identifies available bill fields.<br>4. Extracts line items and amounts.<br>5. Returns a structured draft. | Produces extracted bill information or an error result. | The provider adapter must enforce the approved response schema, timeout, error, and privacy contract. |
+| FS-07 | System | 1. Maps the AI response to the Splitly bill form.<br>2. Pre-fills supported fields.<br>3. Creates item rows from extracted line items.<br>4. Marks missing or uncertain information. | Displays an editable AI-generated bill draft. | Use the receipt-draft fields and validation rules defined by AC-18 to AC-21. |
 | FS-08 | Bill creator | 1. Compares the extracted data with the receipt image.<br>2. Corrects the bill title, date, total, item names, quantities, and prices.<br>3. Adds missing items.<br>4. Removes duplicated or incorrect items.<br>5. Confirms the corrected receipt data. | Updates the draft and clears resolved warnings. | AI output must never be treated as final financial data without review. |
-| FS-09 | Bill creator | 1. Opens the payer-selection interface.<br>2. Selects one group member as the payer.<br>3. Opens the participant-selection interface.<br>4. Adds all people included in the bill.<br>5. Confirms the payer and participant list. | Stores one designated payer and the selected participants. | Multiple payers remain outside the approved scope unless TV4 and TV5 approve a data-model change. |
+| FS-09 | Bill creator | 1. Opens the payer-selection interface.<br>2. Selects one group member as the payer.<br>3. Opens the participant-selection interface.<br>4. Adds all people included in the bill.<br>5. Confirms the payer and participant list. | Stores one designated payer and the selected participants. | Multiple payers are post-MVP. |
 | FS-10 | Bill creator | 1. Reviews the available splitting methods.<br>2. Chooses **Equal**, **By person**, or **By item**.<br>3. Opens the corresponding split interface. | Displays the relevant splitting interface. | By-item splitting is the recommended main prototype path for the primary persona. |
 | FS-11A | System | 1. Reads the confirmed bill total.<br>2. Counts the selected participants.<br>3. Divides the amount equally.<br>4. Handles any approved rounding rule.<br>5. Displays each participant's amount. | Shows the equal allocation. | Equal splitting may still be unfair when consumption differs. |
 | FS-11B | Bill creator | 1. Reviews the selected participants.<br>2. Enters the exact amount owed by each person.<br>3. Adjusts individual amounts when necessary.<br>4. Confirms the entered distribution. | Validates the specified participant amounts. | The creator may still need external knowledge to determine exact amounts. |
 | FS-11C | Bill creator | 1. Reviews the AI-extracted item list.<br>2. Corrects any remaining item information.<br>3. Selects one or more participants for each item.<br>4. Confirms individual and shared items.<br>5. Reviews participant subtotals. | Calculates each participant's item-based share. | AI reduces transcription but cannot determine who consumed each item without user input. |
-| FS-12 | System | 1. Checks that all required fields are completed.<br>2. Verifies the payer and participant list.<br>3. Checks unresolved AI warnings.<br>4. Validates item and participant amounts.<br>5. Compares the allocated total with the confirmed bill total.<br>6. Displays errors or enables bill submission. | Shows validation feedback or permits saving. | Save-blocking rules and rounding tolerance must be approved by TV4. |
+| FS-12 | System | 1. Checks that all required fields are completed.<br>2. Verifies the payer and participant list.<br>3. Checks unresolved AI warnings.<br>4. Validates item and participant amounts.<br>5. Compares the allocated total with the confirmed bill total.<br>6. Displays errors or enables bill submission. | Shows validation feedback or permits saving. | Server-side calculation and deterministic rounding must keep the allocated sum equal to the confirmed total. |
 | FS-13 | Bill creator | 1. Reviews the final bill summary.<br>2. Corrects any remaining validation errors.<br>3. Selects **Save Bill**.<br>4. Confirms bill creation. | Creates the confirmed bill record and opens history or bill detail. | The system should not save directly from raw AI output. |
-| FS-14 | User | 1. Opens the saved bill.<br>2. Reviews the payer, participants, total, individual amounts, and payment progress.<br>3. Opens the source receipt reference if the approved design supports it. | Displays the confirmed bill detail. | Receipt-image storage and retention must be confirmed with TV5. |
+| FS-14 | User | 1. Opens the saved bill.<br>2. Reviews the payer, participants, total, individual amounts, and payment progress. | Displays the confirmed bill detail. | The raw receipt image is processed transiently; only user-confirmed structured data is saved. |
 | FS-15 | Participant / creator | 1. Reviews the amount that must be paid.<br>2. Completes the payment outside or through the supported payment flow.<br>3. Records or confirms the payment in Splitly.<br>4. Reviews the updated status. | Updates the participant's payment status. | Actual bank-transfer status and in-app status may still differ. |
 | FS-16 | Creator | 1. Opens the list of unpaid participants.<br>2. Selects an unpaid participant.<br>3. Sends a reminder.<br>4. Monitors payment progress.<br>5. Repeats the action until all required payments are complete. | Notifies unpaid participants and updates overall progress. | Reminder behavior should remain consistent with the current workflow. |
-
-<!-- CROSS-CHECK REQUIRED WITH TV4: Confirm official backlog IDs, mandatory fields, warning states, validation rules, and save-blocking acceptance criteria. -->
-
-<!-- CROSS-CHECK REQUIRED WITH TV5: Confirm OCR response fields, supported files, AI processing behavior, error handling, image storage, and technical feasibility. -->
-
-<!-- CROSS-CHECK REQUIRED WITH TV6: Confirm OCR API cost, processing-time target, proof-of-concept checkpoint, and go/no-go criteria. -->
 
 ---
 
@@ -94,7 +88,7 @@ The AI-assisted workflow requires or supports the following information.
 
 ### Receipt Input
 
-- receipt image;
+- JPG/JPEG, PNG, or WebP receipt image, maximum 10 MB;
 - image file type;
 - image file size;
 - image preview;
@@ -213,7 +207,7 @@ The system must identify or allow manual correction of these values before the a
 
 ### 7.4 AI Service Dependency
 
-The future workflow may depend on an external AI or OCR provider.
+The future workflow depends on the external Gemini 2.5 Flash API.
 
 Potential issues include:
 
@@ -236,9 +230,9 @@ Receipt images may expose:
 - payment references;
 - personal spending behavior.
 
-The team must define whether images are stored, how long they are retained, and how users can remove them.
+The MVP processes receipt images transiently and stores only user-confirmed structured bill data. Provider-side retention remains subject to the selected Gemini terms and must be disclosed.
 
-### 7.6 Current Data-Model Constraints Remain
+### 7.6 Proposed MVP Data-Model Constraints Remain
 
 AI receipt scanning improves data entry, but it does not automatically solve:
 
@@ -254,7 +248,7 @@ These functions remain outside the approved future-state workflow.
 
 ## 8. Prototype Reference
 
-The screen-level design and visual representation of the future-state workflow are documented separately in `04_Prototype_Workflow.md`.
+The screen-level design and visual representation of the future-state workflow are documented separately in `../Project_Prototype/Prototype_Workflow.md`.
 
 The prototype covers the following key views:
 

@@ -64,7 +64,7 @@ The combined approach has at least six data handoffs and two independent sources
 | Receipt entry | OCR text is copied/normalized manually, or every item is typed. | OCR-assisted bill draft with a correction screen. |
 | Item and shared-dish allocation | Organiser designs columns and formulas. | Assign an item to one or more people with visible allocation rules. |
 | VAT/service fee/discount | Organiser creates formulas and checks reconciliation. | Present the allocation rule and reconcile to the receipt total. |
-| Reciprocal debt clearing | Organiser discovers/offsets it manually. | Calculate and display one net remaining amount between users. |
+| Cross-bill debt clearing | Organiser discovers/offsets it manually. | Post-MVP candidate; the MVP keeps bill-level obligations and payment status clear. |
 | QR creation | Copy the result into a separate generator. | Build a VietQR request directly from the confirmed final amount. |
 | Paid/unpaid status | Bank app, messages and sheet are reconciled manually. | Keep status and reminders in the same bill/debt context. |
 | User experience | Powerful for a spreadsheet-literate organiser, but fragmented for the group. | One guided experience intended for the payer and participants. |
@@ -73,9 +73,9 @@ The combined approach has at least six data handoffs and two independent sources
 
 The existence of a multi-tool workaround does not eliminate the need for Splitly. It clarifies the product's job:
 
-1. **Eliminate avoidable handoffs.** OCR result, allocation, debt clearing and QR request should be connected data, not copied values.
+1. **Eliminate avoidable handoffs.** Receipt draft, bill allocation, bill-level payment status, and QR request should be connected data rather than copied values. Cross-bill debt clearing remains a future option.
 2. **Make financial logic inspectable.** Participants need to see assigned items, shared portions and adjustments before paying.
-3. **Use debt clearing to reduce real transfers.** The user-facing result should be a net amount, for example 8,000 VND rather than reciprocal 10,000/2,000 VND instructions.
+3. **Protect the approved boundary.** Deliver bill-level payment tracking first; evaluate cross-bill netting later with explicit calculation and dispute rules.
 4. **Treat chat as delivery, not storage.** A summary/link can be sent through chat while bill state remains in Splitly.
 5. **Keep the payment boundary clear.** Splitly prepares a bank-transfer QR; it does not need to hold funds to improve the workflow.
 

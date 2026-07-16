@@ -2,9 +2,9 @@
 
 ## 1. Workflow Definition
 
-The current state is the workflow that the team considers implemented and demonstrable: **manual bill entry followed by bill splitting and payment tracking**.
+In this document, **current state** means the team's **manual-entry comparison baseline**: manual bill entry followed by bill splitting and payment tracking. The label is retained to match the original workflow and prototype structure; it does not claim that Splitly is an operating product.
 
-Although the repository contains an OCR page and OCR-related documentation, OCR is excluded from the current baseline because the team has not accepted it as sufficiently reliable.
+Repository screens and code are reference/POC material used to make this baseline concrete. The new product will still be built from the approved documentation. Gemini-assisted receipt entry is shown separately so the prototype can compare manual transcription with the proposed AI path.
 
 ---
 
@@ -40,8 +40,6 @@ flowchart LR
     M --> N[Bill settled]
 ```
 
-<!-- FIGMA SCREENSHOT REQUIRED: Current-state flow overview or the first current-state screen from Figma Make -->
-
 ---
 
 ## 4. Detailed Workflow Specification
@@ -51,14 +49,14 @@ flowchart LR
 | CS-01  | User                  | 1. Opens the Splitly sign-in page.<br>2. Enters login credentials.<br>3. Submits the sign-in form.                                                                                                                                                                   | Opens protected application area                       | Authentication is a prerequisite rather than part of bill splitting |
 | CS-02  | Bill creator          | 1. Opens the Dashboard.<br>2. Selects **Create Bill**.<br>3. Chooses the manual bill-entry option.                                                                                                                                                                   | Displays manual bill-entry page                        | User must start from a blank form                                   |
 | CS-03  | Bill creator          | 1. Enters the bill name.<br>2. Selects a category.<br>3. Adds optional notes.<br>4. Selects the bill date and payment deadline.<br>5. Enters the total bill amount.                                                                                                  | Stores bill name, category, notes, dates               | Repetitive information may be typed every time                      |
-| CS-04  | Bill creator          | 1. Opens the payer-selection interface.<br>2. Searches for or selects a group member.<br>3. Confirms that member as the payer.                                                                                                                                       | Stores one designated payer                            | Multiple payers are not supported in the current payload            |
+| CS-04  | Bill creator          | 1. Opens the payer-selection interface.<br>2. Searches for or selects a group member.<br>3. Confirms that member as the payer.                                                                                                                                       | Stores one designated payer                            | The manual baseline and reference payload use one payer             |
 | CS-05  | Bill creator          | 1. Opens the participant-selection interface.<br>2. Searches for group members.<br>3. Selects the people included in the bill.<br>4. Reviews and confirms the participant list.                                                                                      | Displays selected participants                         | Participant search and selection add interaction cost               |
 | CS-06  | Bill creator          | 1. Reviews the available splitting methods.<br>2. Chooses **Equal**, **By person**, or **By item**.<br>3. Opens the corresponding split interface.                                                                                                                   | Displays the relevant split interface                  | User must decide the correct method                                 |
 | CS-07A | System                | 1. Reads the confirmed bill total.<br>2. Counts the selected participants.<br>3. Divides the total equally among them.<br>4. Handles any rounding difference.<br>5. Displays each participant’s amount.                                                              | Shows equal participant amounts                        | May be unfair when consumption differs                              |
 | CS-07B | Bill creator          | 1. Reviews the selected participants.<br>2. Enters the exact amount owed by each person.<br>3. Adjusts individual amounts when necessary.<br>4. Confirms the entered distribution.                                                                                   | Validates specified amounts                            | Creator must calculate values externally or mentally                |
 | CS-07C | Bill creator          | 1. Reads each item from the physical bill.<br>2. Creates an item row.<br>3. Enters the item name.<br>4. Enters its quantity and price.<br>5. Repeats the process until all items are recorded.                                                                       | Creates structured item rows                           | Main current bottleneck for long receipts                           |
 | CS-08  | Bill creator          | 1. Selects a bill item.<br>2. Chooses one or more participants who consumed it.<br>3. Confirms whether the item is individual or shared.<br>4. Repeats the assignment for all items.<br>5. Reviews each participant’s subtotal.                                      | Calculates each participant's share                    | Allocation still requires human knowledge                           |
-| CS-09  | System                | 1. Checks that all required fields are completed.<br>2. Verifies that a payer and participants are selected.<br>3. Validates item and participant amounts.<br>4. Compares the allocated total with the bill total.<br>5. Displays errors or enables bill submission. | Displays error or permits save                         | Validation rules must be synchronized with TV4                      |
+| CS-09  | System                | 1. Checks that all required fields are completed.<br>2. Verifies that a payer and participants are selected.<br>3. Validates item and participant amounts.<br>4. Compares the allocated total with the bill total.<br>5. Displays errors or enables bill submission. | Displays error or permits save                         | Apply the approved AC-05 to AC-09 validation and rounding rules     |
 | CS-10  | Bill creator          | 1. Reviews the final bill summary.<br>2. Corrects any remaining errors.<br>3. Selects **Save Bill**.<br>4. Confirms bill creation.                                                                                                                                   | Creates bill record and navigates to history           | Incorrect manual transcription becomes persistent                   |
 | CS-11  | User                  | 1. Opens Bill History or the related group page.<br>2. Selects the saved bill.<br>3. Reviews the payer, participants, total amount, individual amounts, and payment progress.                                                                                        | Shows payer, participant amounts, and payment progress | The record is useful only if original input was correct             |
 | CS-12  | Participant / creator | 1. Reviews the amount that must be paid.<br>2. Completes the payment outside or through the supported payment flow.<br>3. Records or confirms the payment in Splitly.<br>4. Reviews the updated payment status.                                                      | Updates payment state                                  | Actual bank transfer and in-app status may differ                   |
@@ -134,10 +132,6 @@ flowchart LR
     D --> E[Add to participant totals]
 ```
 
-<!-- FIGMA SCREENSHOT REQUIRED: Current manual bill-entry page showing split-type controls -->
-
-<!-- FIGMA SCREENSHOT REQUIRED: Current by-item allocation screen showing an item assigned to multiple participants -->
-
 ---
 
 ## 7. Current-State Pain-Point Analysis
@@ -165,9 +159,9 @@ When the user selects by-person split, the exact amounts may need to be calculat
 
 The current bill payload uses one `payerId`. A real event where two people paid different parts of a bill cannot be accurately represented without an agreed workaround.
 
-### 7.5 Documentation and Implementation Are Not Fully Aligned
+### 7.5 Reference Material and Target Requirements Need Alignment
 
-The repository documents describe tax/discount adjustment and OCR as product features, but the accepted current state is manual entry and the verified bill form does not clearly expose dedicated tax/discount fields.
+Reference materials describe tax/discount adjustment and receipt scanning, while the manual comparison screens do not clearly expose dedicated tax/discount fields. The new build must resolve the field and calculation contract before implementation.
 
 This discrepancy must be resolved through cross-checking rather than hidden in the final submission.
 
@@ -188,12 +182,6 @@ This discrepancy must be resolved through cross-checking rather than hidden in t
 11. Saved bill detail.
 12. Payment progress and participant status.
 13. Reminder action.
-
-<!-- FIGMA SCREENSHOT REQUIRED: Dashboard/Create Bill entry point -->
-
-<!-- FIGMA SCREENSHOT REQUIRED: Payer and participant selection views -->
-
-<!-- FIGMA SCREENSHOT REQUIRED: Bill detail showing payment progress -->
 
 ---
 

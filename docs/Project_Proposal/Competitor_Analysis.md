@@ -29,25 +29,25 @@ The Splitly column describes the proposed product behavior. It is not a claim th
 | Split a shared item | **Planned** - equal or item-based allocation | **P** - item assignment plus custom split settings; exact per-line shared rule not detailed | **P** - parts or custom amounts at expense level | **P** - weighted expense splits; exact receipt-line rule not evidenced | **P** - percentage, shares or amounts at expense level |
 | Allocate VAT, service fee and discount transparently | **Planned** - explicit adjustment rule and reconciliation | **U** | **U** | **U** | **U** |
 | Multiple people pay upfront | **Planned decision** - assess whether multi-payer receipts belong in the first release | **Y** - web supports `2+ people paid` | **U** | **Y** - advertises multiple people paid | **U** |
-| Optimize or clear final debts | **Planned** - bilateral debt offset and net balance | **Y** - `simplify debts` restructures debts and minimizes payments | **Y** - settlement suggestions limit transactions | **Y** - explicitly minimizes transfers | **Y** - reimbursement optimization |
+| Optimize or clear final debts | **Post-MVP** - benchmark for later validation | **Y** - `simplify debts` restructures debts and minimizes payments | **Y** - settlement suggestions limit transactions | **Y** - explicitly minimizes transfers | **Y** - reimbursement optimization |
 | VietQR request for the final amount | **Planned** - final balance becomes a VietQR request | **N** - generic payment integrations are advertised, not VietQR | **N** - payment requests, no VietQR evidence | **N** - no VietQR evidence | **N** - no VietQR evidence |
 | Track paid / unpaid and remind | **Planned** - bill-linked payment status and reminders | **Y** - payments can be recorded | **Y** - payment requests and balances | **Y** - debt can be marked settled and reminders are evidenced | **P** - reimbursements are advertised; reminder/status detail not evidenced |
 
-## 4. Debt clearing: Splitly and Splitwise
+## 4. Debt simplification benchmark
 
-Debt clearing must be treated as a core user benefit, not merely a calculation detail. It removes redundant transfers after several shared bills.
+Debt simplification can remove redundant transfers after several shared bills, but it is not required to complete the approved Splitly MVP workflow.
 
 | Aspect | Splitly | Splitwise |
 | --- | --- | --- |
-| Current mechanism | An explicit bilateral balance action offsets outstanding bills between two users, starting with the smaller remaining amount, then returns the net debt. | `Simplify debts` restructures group and friendship debts to minimize the total number of payments without changing each person's total balance. |
-| Mutual-debt example | If A owes B 10,000 VND and B owes A 2,000 VND, the 2,000 VND is offset. The result is one net obligation: A owes B 8,000 VND. | The same economic principle is available. Splitwise can also simplify longer group chains, such as A owing B and B owing C, into fewer payments. |
-| Business implication | Splitly can make the remaining amount visible in the same Vietnamese-localized experience and prepare a VietQR request for the final amount. | Splitwise is the benchmark for debt simplification. Debt clearing alone is not a differentiator. |
+| MVP position | Splitly tracks and settles obligations within each confirmed bill. Cross-bill netting is deferred. | `Simplify debts` restructures group and friendship debts to minimize the total number of payments without changing each person's total balance. |
+| Mutual-debt example | A future version could offset A owing B 10,000 VND against B owing A 2,000 VND, but the MVP retains the two bill-level records. | Splitwise can simplify reciprocal balances and longer group chains into fewer payments. |
+| Business implication | The MVP focuses on accurate receipt entry, explainable allocation, confirmation, reminders, and VietQR for the bill-level amount. | Splitwise is the benchmark if debt simplification enters the future backlog. |
 
-Splitly proposes a bilateral debt-clearing rule that offsets the smaller reciprocal amount first and leaves one net balance. This is the rule behind the 10,000/2,000 VND example.
+No cross-bill clearing algorithm is committed for the MVP. Any future rule requires separate requirements, calculation invariants, explanation, and test cases.
 
 Splitwise's official help describes `simplify debts` as restructuring debts within groups and across friendships, preserving each person's total while reducing payment count. [Splitwise debt simplification](https://feedback.splitwise.com/knowledgebase/articles/107220-what-is-debt-simplification)
 
-**Positioning consequence:** Splitly should match the essential benefit of reduced settlement transfers, then differentiate by tying the final net amount to an explainable receipt result and a local VietQR request. It must not claim debt simplification as unique.
+**Positioning consequence:** Cross-bill debt simplification is a useful benchmark but is deferred beyond the Splitly MVP. The initial product should differentiate through an explainable receipt-to-bill workflow, bill-level payment status, and a local VietQR request without claiming debt simplification as a current capability.
 
 ## 5. Competitor assessment
 
@@ -119,15 +119,14 @@ Receipt image
   -> editable bill data
   -> item and shared-dish assignment
   -> transparent VAT/service fee/discount allocation
-  -> bilateral debt clearing where reciprocal bills exist
-  -> one final net amount
+  -> confirmed bill-level obligations
   -> per-person VietQR request
   -> paid/unpaid follow-up
 ```
 
 The result is a focused position rather than a broad claim:
 
-> **Splitly helps Vietnamese groups turn a receipt into transparent personal balances, clear reciprocal debts, and create ready-to-pay VietQR requests.**
+> **Splitly helps Vietnamese groups turn a receipt into transparent bill-level obligations and ready-to-pay VietQR requests.**
 
 This integrated flow is valuable because it joins calculation correctness, social transparency and payment completion. It also makes existing debt-clearing behavior more useful: the user sees a single remaining amount after offsetting mutual obligations and can pay that amount without re-entering it in a bank app.
 

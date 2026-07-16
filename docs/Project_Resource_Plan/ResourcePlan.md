@@ -1,53 +1,72 @@
 # Resource Plan - Splitly Project
 
-## 1. Introduction
-This document defines and allocates the necessary resources (human, tools, and equipment) to execute the **Splitly** project - a smart expense sharing and management application. The project is undertaken by a team of 6 third-year students from the University of Science (HCMUS), with the goal of building an optimized product starting from a manual entry workflow and evolving into an AI-integrated (receipt scanning) solution.
+## 1. Purpose and Planning Basis
 
-## 2. Human Resources: Roles & Responsibilities
-The development team consists of 6 members. Given the nature of a student project, roles are distributed flexibly with cross-functional support. The specific roles are as follows:
+This document defines the people, tools, environments, and effort available to build the Splitly MVP from the approved project documentation. The repository may contain reference code or proof-of-concept material, but it is not treated as an operating product or as evidence that an MVP feature is complete.
 
-| Role | Quantity | Main Responsibilities |
-| --- | --- | --- |
-| **Project Manager (PM) / BA** | 1 | Manages overall progress, distributes tasks, and coordinates resources. Primarily responsible for business documentation, User Stories, and workflows. |
-| **UI/UX Designer / Frontend Dev** | 1 | Designs wireframes, mockups, and prototypes in Figma. Builds the frontend interface based on the design, ensuring a smooth UX for the user journey. |
-| **Frontend Developer** | 1 | Focuses on user interface (UI) development, integrating split bill logic on the client-side, and connecting with Backend APIs. |
-| **Backend Developer / AI Engineer** | 1 | Designs the Database and develops core APIs. Responsible for researching and integrating the OCR model (PaddleOCR/Tesseract) for receipt scanning. |
-| **Backend Developer** | 1 | Supports API development, handles complex algorithms such as debt clearing logic, VietQR integration, and security measures. |
-| **QA / Tester / DevOps** | 1 | Creates test cases and executes testing (Manual/Automation). Assists in setting up the CI/CD environment and deploying the application. |
+The baseline is a ten-week student project delivered by six members. Each member contributes approximately two working days per week. One planning day is treated as eight hours for capacity estimation; actual weekly availability may vary around classes and examinations.
 
-## 3. Resource Allocation & Effort Estimation
-**Working Hours:** 
-Each member commits to dedicating approximately **4 days/week** to the project (estimated at 16 - 24 hours/week/person, depending on the university schedule).
+## 2. Human Resources and Responsibilities
 
-**Weekly Effort Estimation:**
-- **Total person-days per week:** 6 members × 4 days/week = **24 person-days/week**.
-- The following is the estimated Effort Distribution and resource priority across the main phases of the project:
+Roles are primary responsibilities rather than rigid job boundaries. Every member participates in review, testing, documentation, and integration.
 
-| Phase | BA / Design | Frontend | Backend & AI | QA & DevOps | Work Focus |
-| --- | --- | --- | --- | --- | --- |
-| **1. Initiation & Analysis** | High | Low | Low | Low | Finalize Requirements, DB & Figma design. |
-| **2. Core Dev (Manual Entry)** | Low | High | High | Medium | Code core splitting logic, create APIs, assemble UI. |
-| **3. Advanced Dev (AI OCR)** | Medium | High | High | Medium | Integrate receipt recognition (OCR) and VietQR API. |
-| **4. Testing & Refinement** | Low | Medium | Medium | High | Fix bugs, UAT, evaluate AI accuracy. |
+| Primary role | Quantity | Main responsibilities |
+| --- | ---: | --- |
+| Project Manager / Business Analyst | 1 | Coordinate scope, schedule, risks, decisions, requirements, workflows, and stakeholder communication. |
+| UI/UX Designer / Frontend Developer | 1 | Maintain the prototype and design system; implement responsive and accessible user journeys. |
+| Frontend Developer | 1 | Implement client-side workflows, state management, API integration, validation feedback, and Vietnamese localization. |
+| Backend Developer / AI Integration Engineer | 1 | Design APIs and data contracts; integrate Gemini 2.5 Flash receipt extraction and its manual fallback. |
+| Backend Developer | 1 | Implement authoritative splitting, groups, payment tracking, VietQR assistance, authorization, and audit behavior. |
+| QA / Tester / DevOps | 1 | Define and execute tests; manage quality gates, deployment configuration, monitoring, and release evidence. |
 
-## 4. Development Environment & Tools
-The project fully utilizes modern tools to increase team productivity, particularly with AI assistance:
+## 3. Capacity and Effort Baseline
 
-* **AI Coding Assistants:** The team is equipped with **3 Codex accounts** to assist with coding. These accounts will be rotated or prioritized for 3 Developers (Frontend and Backend) during intensive coding phases to accelerate writing logic, generating test cases, and handling complex bill-splitting algorithms.
-* **Project & Code Management:** GitHub (source code management, Issues, PRs), Notion/Trello (task management), Discord/Zalo (Communication).
-* **Design:** Figma (Prototype and UI assets).
-* **Core Tech Stack & AI:** React/Vue (Frontend), Node.js/Python (Backend & AI Services), PaddleOCR/Tesseract (OCR receipt recognition).
+- Team size: **6 members**.
+- Duration: **10 weeks**.
+- Commitment: **2 person-days per member per week**.
+- Weekly capacity: `6 x 2 = 12 person-days`, or approximately **96 person-hours**.
+- Project capacity: `6 x 10 x 2 = 120 person-days`, or approximately **960 person-hours**.
+
+This is gross capacity. Sprint commitments must reserve time for meetings, integration, defect correction, and academic schedule risk; the team must not plan all 960 hours as feature-development time.
+
+| Phase | Weeks | Approximate team capacity | Primary focus |
+| --- | --- | ---: | --- |
+| Initiation and baseline | 1-2 | 24 person-days | Charter, scope, backlog, architecture, prototype, environment, and calculation proof of concept. |
+| Core MVP development | 3-5 | 36 person-days | Authentication, groups, manual bill entry, three split methods, validation, history, and payment state. |
+| Integration development | 6-7 | 24 person-days | Gemini receipt scanning, review/correction, VietQR, confirmation, reminders, and notifications. |
+| Verification and release | 8-10 | 36 person-days | Integration tests, security/privacy checks, UAT, defect fixing, deployment, and handover. |
+
+## 4. Development Environment and Tools
+
+| Area | Baseline choice |
+| --- | --- |
+| Product and code management | GitHub for source control, issues, pull requests, and review; the team may use Trello or Notion for planning and Discord or Zalo for communication. |
+| Design | Figma for wireframes, prototype screens, and shared UI decisions. |
+| Web and API | React/Vite frontend; Node.js/Express backend; MongoDB Atlas database. |
+| AI receipt extraction | Gemini 2.5 Flash API behind a server-side provider adapter. Extracted values remain an editable draft until user confirmation. |
+| Payment assistance | VietQR instructions and QR image generation; Splitly does not hold or transfer funds. |
+| Deployment | Vercel for the frontend, Render for the API and notification worker, and MongoDB Atlas for application data and the transactional outbox. |
+| AI development assistance | Six individual Codex Plus accounts, one per member, using GPT-5.5 with medium reasoning as the planning assumption. Credentials must not be shared. |
+
+AI-generated code, tests, and documentation are drafts that remain subject to human review. Financial calculations, authorization rules, external API usage, and privacy-sensitive behavior require explicit verification by the responsible team member.
 
 ## 5. Resource Schedule
-- **Initial Phase:** Resources are heavily focused on the Project Manager, UI/UX Design, and setting up the Backend/Database architecture. (The 3 Codex accounts can be used to generate boilerplate code).
-- **Middle Phase (Core Development):** Frontend and Backend resources are operating at 100% capacity. The 3 Codex accounts are used continuously to accelerate the completion of the *Manual Entry* flow and *Debt Clearing* logic.
-- **Final Phase (AI Integration & Testing):** Backend/AI focuses on OCR image processing and data extraction. The Tester operates at maximum capacity to evaluate AI accuracy and build fallback logic for cases where OCR misreads data.
 
-## 6. Resource Risks & Mitigation
+| Period | Main allocation |
+| --- | --- |
+| Weeks 1-2 | PM/BA and UI/UX lead the baseline; backend validates calculation, data, Gemini, and deployment feasibility; QA prepares acceptance tests. |
+| Weeks 3-5 | Frontend and backend implement the smallest end-to-end manual bill flow while QA tests incrementally. |
+| Weeks 6-7 | The AI engineer integrates Gemini 2.5 Flash; the team completes payment assistance and notification paths without weakening the manual fallback. |
+| Weeks 8-9 | QA/UAT becomes the priority; developers fix defects and validate security, data integrity, provider failure, and responsive behavior. |
+| Week 10 | DevOps prepares the demonstration deployment and handover evidence; PM closes acceptance items and records remaining backlog. |
 
-| Risk | Impact | Mitigation Strategy |
+## 6. Resource Risks and Mitigation
+
+| Risk | Impact | Mitigation |
 | --- | --- | --- |
-| **Schedule conflicts with exams/other assignments** reducing actual work days (below 4 days/week). | High | Plan with buffer time. Accelerate progress during free weeks. Maximize the use of Codex to compensate for slower coding speeds during busy times. |
-| **Conflicts when sharing 3 Codex accounts** among 4-5 developers. | Low | Establish a clear shift schedule (morning/afternoon/evening) or use screen sharing (Pair-programming) so 2 devs can share 1 account. |
-| **Coding Bottlenecks**. | Medium | Organize Pair-programming (1 person dictates the algorithm, 1 person prompts Codex to generate code quickly). |
-| **Lack of in-depth knowledge in AI/OCR integration** leading to excessive research time. | High | Allocate the AI Engineer to build Proof of Concepts (PoCs) from the very first week. Use Codex to ask for architectural suggestions for OCR. |
+| Classes, examinations, or illness reduce the planned two days per week. | High | Track actual availability weekly, protect Weeks 8-10 for integration and correction, and reduce lower-priority scope through change control. |
+| Six members work on dependent components concurrently. | Medium | Define module owners, API contracts, small pull requests, mandatory review, and scheduled integration checkpoints. |
+| Limited experience with receipt extraction or financial allocation. | High | Build early proof-of-concept tests, keep Gemini behind an adapter, require human review, and preserve manual entry. |
+| External services are unavailable, rate-limited, or change terms. | High | Use timeouts and safe error handling; retain manual entry and copyable bank instructions; queue notification events in the outbox and retry them through the worker. |
+| AI-assisted development introduces incorrect or insecure output. | High | Never accept generated output without owner review, automated checks, security review, and traceability to approved requirements. |
+| Free hosting tiers sleep or impose quotas. | Medium | Document cold-start limitations, monitor quota before demonstrations, prepare a test run, and record any required paid upgrade through change control. |
