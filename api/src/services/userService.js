@@ -7,7 +7,7 @@ import bcryptjs from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
 import { pickUser } from '~/utils/formatters'
 import { WEBSITE_DOMAIN } from '~/utils/constants'
-import { BrevoEmailProvider } from '~/providers/BrevoEmailProvider'
+import { NodemailerProvider } from '~/providers/NodemailerProvider'
 import { verificationEmailTemplate } from '~/utils/emailTemplates'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
@@ -68,7 +68,7 @@ const createNew = async (reqBody, options = {}) => {
         let emailError = null
 
         try {
-          await BrevoEmailProvider.sendEmail(
+          await NodemailerProvider.sendEmail(
             updatedUser.email,
             emailContent.subject,
             emailContent.text,
@@ -133,7 +133,7 @@ const createNew = async (reqBody, options = {}) => {
     let emailError = null
 
     try {
-      await BrevoEmailProvider.sendEmail(getNewUser.email, emailContent.subject, emailContent.text, emailContent.html)
+      await NodemailerProvider.sendEmail(getNewUser.email, emailContent.subject, emailContent.text, emailContent.html)
     } catch (error) {
       emailSent = false
       emailError = error.message
