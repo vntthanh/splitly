@@ -1,93 +1,74 @@
-import { StatusCodes } from "http-status-codes";
-import ApiError from "~/utils/APIError.js";
-import { ObjectId } from 'mongodb'
-import { userModel } from '~/models/index.js'
-import { ClovaXClient } from "~/providers/ClovaStudioProvider.js";
-import { allTools, categorizeRequestTool } from "~/utils/tools.js";
-import { navigateBillCreateForm, getNewPrompt, getDataForAnalysis } from "~/utils/assistantHelpers";
+import { randomUUID } from 'crypto'
+import { StatusCodes } from 'http-status-codes'
+import ApiError from '~/utils/APIError.js'
+import { ClovaXClient } from '~/providers/ClovaStudioProvider.js'
+import { processAssistantTurn } from '~/services/assistantService.js'
+import { getDataForAnalysis } from '~/utils/assistantHelpers'
+
+const ASSISTANT_ERROR_RESPONSES = {
+  AI_INVALID_REQUEST: {
+    statusCode: StatusCodes.UNPROCESSABLE_ENTITY,
+    message: 'Nội dung trò chuyện không hợp lệ.',
+  },
+  AI_ACTOR_NOT_FOUND: {
+    statusCode: StatusCodes.NOT_FOUND,
+    message: 'Không tìm thấy tài khoản đang đăng nhập.',
+  },
+  AI_INVALID_RESPONSE: {
+    statusCode: StatusCodes.BAD_GATEWAY,
+    message: 'TingTing trả về dữ liệu không hợp lệ. Vui lòng thử lại.',
+  },
+  AI_RATE_LIMITED: {
+    statusCode: StatusCodes.TOO_MANY_REQUESTS,
+    message: 'TingTing đang nhận quá nhiều yêu cầu. Vui lòng thử lại sau.',
+  },
+  AI_TIMEOUT: {
+    statusCode: StatusCodes.GATEWAY_TIMEOUT,
+    message: 'TingTing phản hồi quá lâu. Vui lòng thử lại.',
+  },
+  AI_PERMISSION_DENIED: {
+    statusCode: StatusCodes.SERVICE_UNAVAILABLE,
+    message: 'TingTing hiện chưa được cấu hình để xử lý yêu cầu.',
+  },
+  AI_CONFIGURATION_ERROR: {
+    statusCode: StatusCodes.SERVICE_UNAVAILABLE,
+    message: 'TingTing hiện chưa được cấu hình để xử lý yêu cầu.',
+  },
+  AI_UNAVAILABLE: {
+    statusCode: StatusCodes.SERVICE_UNAVAILABLE,
+    message: 'TingTing đang tạm thời không khả dụng. Vui lòng thử lại sau.',
+  },
+}
 
 const processAIRequest = async (req, res, next) => {
-    try {
-        const { userId, messages } = req.body;
-        const userIdObj = new ObjectId(userId);
-        const user = await userModel.findOneById(userIdObj);
-        let navigation = null;
+  const requestId = randomUUID()
+  res.set('X-Request-ID', requestId)
 
-        if (!user) {
-            const errorMessage = `User with ID ${userId} not found.`;
-            const customError = new ApiError(StatusCodes.NOT_FOUND, errorMessage);
-            return next(customError);
-        }
+  try {
+    const result = await processAssistantTurn({
+      actorId: req.jwtDecoded._id,
+      messages: req.body.messages,
+    })
 
-        const client = new ClovaXClient();
-
-        if (messages.length === 0 || messages[0].role !== "system") {
-            messages.unshift({
-                role: "system",
-                content: "You are TingTing, a helpful assistant for managing shared expense bills. When the user asks you to create a new bill without providing enough information, request that the user supply all required bill details: bill name, payment deadline, bill-splitting method (split evenly, split by person, split by item), names or emails of the participants, and the total amount of the bill. When the user asks you to create a new bill with complete information, use the tool search_participants_by_key to find user information based on the provided names or emails, and use the tool create_new_bill to create the bill from the information the user provided. Provide concise results for the bills you create. When user ask what you can do, you can help users create new bills through messages or by scanning receipts, inform users and remind them about the payment status of their bills and their friends' bills. Always maintain a positive, friendly, and sociable attitude. All of your responses must always be in Vietnamese plain text.",
-            });
-        }
-
-        console.log("ClovaX Request Messages:", JSON.stringify(messages, null, 2));
-
-        const request = client.createRequest(messages, allTools);
-        const response = await client.createChatCompletion(request);
-        const assistantMessage = response.result.message;
-
-        console.log("ClovaX Response:", JSON.stringify(response, null, 2));
-
-        if (
-            response.result.finishReason === "tool_calls" &&
-            assistantMessage.toolCalls &&
-            assistantMessage.toolCalls.length > 0
-        ) {
-            console.log("Tool calls detected:", JSON.stringify(assistantMessage.toolCalls, null, 2));
-
-            // Execute all tool calls
-            for (const toolCall of assistantMessage.toolCalls) {
-                const args = toolCall.function.arguments;
-                try {
-                    if (toolCall.function.name === "create_new_bill") {
-                        navigation = navigateBillCreateForm(args)
-                        messages.push({
-                            role: "tool",
-                            content: `Điền thông tin vào hóa đơn thành công:\n ${JSON.stringify(args, null, 2)}`,
-                            toolCallId: toolCall.id,
-                        });
-                    } else if (toolCall.function.name === "search_participants_by_key") {
-                        const users = await userModel.findManyByKeys(toolArgs.keys);
-                        processMessages.push({
-                            role: "tool",
-                            content: `User search results:\n ${JSON.stringify(userData, null, 2)}\n ${JSON.stringify(users, null, 2)}`,
-                            toolCallId: toolCall.id,
-                        });
-                    } 
-                } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-                    console.error("Error: ", error);
-                    messages.push({
-                        role: "tool",
-                        content: `Error: ${errorMessage}`,
-                        toolCallId: toolCall.id,
-                    });
-                }
-            }
-        }
-
-        const finalRequest = {
-            ...client.createRequest(messages),
-            maxTokens: 1000,
-        };
-        const finalResponse = await client.createChatCompletion(finalRequest);
-        messages.push(finalResponse.result.message);
-
-        res.status(StatusCodes.OK).json({ messages, navigation: navigation });
-    } catch (error) {
-        const errorMessage = new Error(error).message;
-        const customError = new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, errorMessage);
-        next(customError);
+    res.status(StatusCodes.OK).json({
+      data: result,
+      meta: { requestId },
+    })
+  } catch (error) {
+    const response = ASSISTANT_ERROR_RESPONSES[error.code] || {
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: 'Không thể xử lý yêu cầu với TingTing.',
     }
-};
+
+    console.error('Assistant request failed', {
+      requestId,
+      code: error.code || 'UNKNOWN_ERROR',
+      statusCode: response.statusCode,
+    })
+
+    next(new ApiError(response.statusCode, response.message))
+  }
+}
 
 // const processAIRequest = async (req, res, next) => {
 //     try {
