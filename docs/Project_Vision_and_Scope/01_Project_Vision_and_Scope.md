@@ -83,14 +83,14 @@ Even when the arithmetic is simple, the full process is repetitive, error-prone,
 
 ### 6.2 Current-State Pain Points
 
-| Pain point | Consequence |
-|---|---|
-| Manual transcription of bill information | Slow bill creation and risk of input errors |
-| Re-entering every item for item-based splitting | High effort for long receipts |
-| Switching between receipt, calculator, notes, and chat | Fragmented workflow |
-| Unclear payment status | Repeated checking and follow-up |
-| Manual reminders | Social discomfort for the payer |
-| Lack of a shared record | Disagreement about amounts or payment status |
+| Pain point                                             | Consequence                                  |
+| ------------------------------------------------------ | -------------------------------------------- |
+| Manual transcription of bill information               | Slow bill creation and risk of input errors  |
+| Re-entering every item for item-based splitting        | High effort for long receipts                |
+| Switching between receipt, calculator, notes, and chat | Fragmented workflow                          |
+| Unclear payment status                                 | Repeated checking and follow-up              |
+| Manual reminders                                       | Social discomfort for the payer              |
+| Lack of a shared record                                | Disagreement about amounts or payment status |
 
 ### 6.3 Future-State Opportunity
 
@@ -169,8 +169,6 @@ Recurring billing is not part of the approved current/future workflow in this do
 - Require user review before saving.
 - Preserve manual correction and manual-entry fallback.
 - Reduce bill-creation effort without weakening financial accuracy.
-
-
 
 ---
 
@@ -272,7 +270,7 @@ The following fields may be included only when TV4 and TV5 confirm requirements 
 
 ## 11. Scope Boundary Diagram
 
-```mermaid
+````mermaid
 flowchart LR
     A[Receipt or bill information] --> B{Entry method}
     B -->|Current| C[Manual data entry]
@@ -285,7 +283,7 @@ flowchart LR
     H --> I[Calculate and validate]
     I --> J[Save bill]
     J --> K[Track payment status]
-```
+``` dd
 
 ---
 
@@ -312,3 +310,4 @@ flowchart LR
 - The current UI and data model may require changes to represent extraction confidence and receipt metadata.
 - Financial calculations require deterministic validation independent of AI output.
 - The future workflow must fit the team's approved schedule and available technical resources.
+````
