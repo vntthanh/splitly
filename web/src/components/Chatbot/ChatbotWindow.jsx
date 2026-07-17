@@ -5,15 +5,12 @@ import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import CreateIcon from '@mui/icons-material/Create';
-import WarningIcon from '@mui/icons-material/Warning';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import ExploreIcon from '@mui/icons-material/Explore';
 import TingTingGif from '~/assets/tingting.gif';
 import TingTingPng from '~/assets/tingting.png';
 import { toast } from 'react-toastify'
 import { getAssistantResponseAPI } from '~/apis';
 import { getInitials } from '~/utils/formatters';
-import { useChatbot } from '~/context/ChatbotContext';
 import { useNavigate } from 'react-router-dom'
 
 // Quick Replies Configuration
@@ -96,7 +93,17 @@ const SUGGESTIONS = [
   }
 ];
 
-const ChatbotWindow = ({ isOpen, setIsOpen }) => {
+const createChatMessage = (role, content) => ({
+  id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  content,
+  role,
+  time:
+    new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+    ' ' +
+    new Date().toLocaleDateString('vi-VN'),
+})
+
+const ChatbotWindow = ({ setIsOpen }) => {
   const navigate = useNavigate()
   const currentUser = useSelector(selectCurrentUser)
   const [messages, setMessages] = useState(() => {
@@ -105,7 +112,6 @@ const ChatbotWindow = ({ isOpen, setIsOpen }) => {
   });
   const [inputMessage, setInputMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const { pageContext, getPageContextSummary } = useChatbot();
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -125,35 +131,41 @@ const ChatbotWindow = ({ isOpen, setIsOpen }) => {
     toast.success('Đã xóa toàn bộ tin nhắn');
   };
 
-  const handleQuickReply = async (message) => {
+  const sendMessage = async (content) => {
     if (isThinking) return;
 
-    // Add user message
-    const userMessage = {
-      id: messages.length + 1,
-      content: message,
-      role: 'user',
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN')
-    };
+    const userMessage = createChatMessage('user', content)
+    const nextMessages = [...messages, userMessage]
 
-    // Add user message immediately
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(nextMessages);
     setIsThinking(true);
 
-    // Get bot response
     try {
-      const { newMessages, navigation } = await getAssistantResponseAPI(currentUser?._id, [...messages, userMessage]);
+      const { reply, action } = await getAssistantResponseAPI(nextMessages)
+      const assistantMessage = createChatMessage('assistant', reply)
 
-      setMessages(newMessages);
-      if (navigation) {
-        navigate(navigation.path, { state: navigation.state })
+      setMessages([...nextMessages, assistantMessage])
+
+      if (action?.type === 'OPEN_BILL_DRAFT') {
+        navigate('/create', {
+          state: {
+            chatbotWindowOpen: true,
+            billFormData: action.payload,
+            billDraftWarnings: action.warnings || [],
+          },
+        })
       }
     } catch (error) {
-      console.error(`Đã có lỗi xảy ra: ${error.message}`);
-      toast.error(`Đã có lỗi xảy ra: ${error.message}`);
+      const errorMessage = error.response?.data?.message || error.message || 'Không thể kết nối với TingTing.'
+      console.error('Assistant request failed:', errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsThinking(false);
     }
+  };
+
+  const handleQuickReply = async (message) => {
+    await sendMessage(message)
   };
 
   const handleSendMessage = async (e) => {
@@ -161,34 +173,10 @@ const ChatbotWindow = ({ isOpen, setIsOpen }) => {
 
     if (inputMessage.trim() === '' || isThinking) return;
 
-    // Add user message
-    const userMessage = {
-      id: messages.length + 1,
-      content: inputMessage.trim(),
-      role: 'user',
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN')
-    };
+    const content = inputMessage.trim()
 
     setInputMessage('');
-
-    // Add user message immediately
-    setMessages(prev => [...prev, userMessage]);
-    setIsThinking(true);
-
-    // Get bot response
-    try {
-      const { newMessages, navigation } = await getAssistantResponseAPI(currentUser?._id, [...messages, userMessage]);
-
-      setMessages(newMessages);
-      if (navigation) {
-        navigate(navigation.path, { state: navigation.state })
-      }
-    } catch (error) {
-      console.error(`Đã có lỗi xảy ra: ${error.message}`);
-      toast.error(`Đã có lỗi xảy ra: ${error.message}`);
-    } finally {
-      setIsThinking(false);
-    }
+    await sendMessage(content)
   };
 
   return (
@@ -308,7 +296,7 @@ const ChatbotWindow = ({ isOpen, setIsOpen }) => {
                 {/* User avatar - right side */}
                 {message.role === 'user' && (
                   <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#EF9A9A] to-[#CE93D8] flex items-center justify-center flex-shrink-0 mb-1">
-                    <span className="text-xs font-semibold text-white">{getInitials(currentUser.name)}</span>
+                    <span className="text-xs font-semibold text-white">{getInitials(currentUser?.name || '')}</span>
                   </div>
                 )}
               </div>

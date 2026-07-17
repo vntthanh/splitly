@@ -398,6 +398,46 @@ export const activeBillSlice = createSlice({
       ]
     },
 
+    // Replace the editable bill fields with an AI-generated draft. This never submits a bill.
+    hydrateBillDraft: (state, action) => {
+      const draft = action.payload
+
+      state.billName = draft.billName || ''
+      state.category = draft.category || 'food'
+      state.notes = draft.notes || ''
+      state.creationDate = draft.creationDate || new Date().toISOString()
+      state.paymentDeadline = draft.paymentDeadline || ''
+      state.payer = draft.payer || null
+      state.splitType = draft.splitType || 'equal'
+      state.totalAmount = Number(draft.totalAmount) || 0
+      state.participants = (draft.participants || []).map((participant) => ({
+        id: participant.id || participant._id,
+        name: participant.name || '',
+        email: participant.email || '',
+        amount: Number(participant.amount) || 0,
+        usedAmount: Number(participant.usedAmount) || 0,
+        groups: participant.groups || [],
+      }))
+      state.items =
+        draft.splitType === 'by-item' && draft.items?.length
+          ? draft.items.map((item) => ({
+              id: item.id || `${Date.now()}-${Math.random()}`,
+              name: item.name || '',
+              quantity: Number(item.quantity) || 1,
+              amount: Number(item.unitPrice ?? item.amount) || 0,
+              allocatedTo: item.allocatedTo || [],
+            }))
+          : [
+              {
+                id: Date.now(),
+                name: '',
+                quantity: 1,
+                amount: 0,
+                allocatedTo: [],
+              },
+            ]
+    },
+
     setSubmitError: (state, action) => {
       state.submitError = action.payload
     },
@@ -585,6 +625,7 @@ export const {
   calculateAmounts,
   resetBill,
   initializeBill,
+  hydrateBillDraft,
   setSubmitError,
 } = activeBillSlice.actions
 

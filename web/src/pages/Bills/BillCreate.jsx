@@ -36,6 +36,7 @@ import {
   toggleItemAllocation,
   calculateAmounts,
   initializeBill,
+  hydrateBillDraft,
   resetBill,
   setSubmitError,
   fetchInitialDataThunk,
@@ -66,6 +67,7 @@ function BillCreate() {
   // Dialog states
   const [openParticipantDialog, setOpenParticipantDialog] = useState(false)
   const [openPayerDialog, setOpenPayerDialog] = useState(false)
+  const [billDraftWarnings, setBillDraftWarnings] = useState([])
 
   // Chatbot
   const { updatePageContext } = useChatbot()
@@ -108,62 +110,9 @@ function BillCreate() {
     }
 
     if (formData) {
-      // Fill form fields using Redux
-      if (formData.billName) {
-        dispatch(updateField({ field: 'billName', value: formData.billName }))
-      }
-      if (formData.category) {
-        dispatch(updateField({ field: 'category', value: formData.category }))
-      }
-      if (formData.notes) {
-        dispatch(updateField({ field: 'notes', value: formData.notes }))
-      }
-      if (formData.totalAmount) {
-        dispatch(updateField({ field: 'totalAmount', value: parseFloat(formData.totalAmount) }))
-      }
-      if (formData.splitType) {
-        dispatch(updateField({ field: 'splitType', value: formData.splitType }))
-      }
-      if (formData.paymentDeadline) {
-        dispatch(updateField({ field: 'paymentDeadline', value: formData.paymentDeadline }))
-      }
-      if (formData.creationDate) {
-        dispatch(updateField({ field: 'creationDate', value: formData.creationDate }))
-      }
-
-      // Fill participants if provided
-      if (formData.participants && Array.isArray(formData.participants) && formData.participants.length > 0) {
-        const formattedParticipants = formData.participants.map((p) => ({
-          id: p.id || p._id,
-          name: p.name || '',
-          email: p.email || '',
-          amount: p.amount || 0,
-          usedAmount: p.usedAmount || 0,
-        }))
-        dispatch(addParticipants(formattedParticipants))
-      }
-
-      // Fill payer if provided
-      if (formData.payer) {
-        dispatch(updateField({ field: 'payer', value: formData.payer }))
-      }
-
-      // Fill items for item-based split
-      if (formData.items && Array.isArray(formData.items) && formData.items.length > 0) {
-        formData.items.forEach((itemData) => {
-          dispatch(
-            addItem({
-              name: itemData.name || '',
-              amount: itemData.unitPrice || 0,
-              quantity: itemData.quantity || 1,
-              allocatedTo: itemData.allocatedTo || [],
-            })
-          )
-        })
-      }
-
-      // Recalculate amounts after filling all data
+      dispatch(hydrateBillDraft(formData))
       dispatch(calculateAmounts())
+      setBillDraftWarnings(stateData?.billDraftWarnings || [])
 
       // Clear the payload to prevent re-filling on future navigations
       if (stateData) {
@@ -450,6 +399,26 @@ function BillCreate() {
         </Box>
 
         {submitError && <FieldErrorAlert message={submitError} />}
+
+        {billDraftWarnings.length > 0 && (
+          <Box
+            sx={(theme) => ({
+              mb: 2,
+              p: 2,
+              borderRadius: '12px',
+              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.12)' : '#FFF8E1',
+              border: '1px solid',
+              borderColor: 'warning.light',
+            })}
+          >
+            <Typography sx={{ fontWeight: 600, mb: 0.5, color: 'warning.main' }}>Cần kiểm tra lại</Typography>
+            {billDraftWarnings.map((warning) => (
+              <Typography key={warning} sx={{ fontSize: '14px', color: 'text.secondary' }}>
+                {warning}
+              </Typography>
+            ))}
+          </Box>
+        )}
 
         {/* General Information Section */}
         <GeneralInformationSection
