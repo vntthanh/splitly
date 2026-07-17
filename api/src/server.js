@@ -9,7 +9,7 @@ import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 import { initializeDatabase } from '~/config/initDB'
 import cookieParser from 'cookie-parser'
-import { NodemailerProvider } from '~/providers/NodemailerProvider'
+import { MicrosoftGraphEmailProvider } from '~/providers/MicrosoftGraphEmailProvider'
 import socketIo from 'socket.io'
 import http from 'http'
 import { notificationSocket, setIoInstance } from '~/sockets/notificationSocket'
@@ -62,14 +62,14 @@ const START_SERVER = () => {
     await initializeDatabase()
     console.log('4.Database indexes initialized!')
 
-    console.log('5.Verifying SMTP email service...')
+    console.log('5.Verifying Microsoft Graph email service...')
 
-    const smtpReady = await NodemailerProvider.verifyConnection()
-    if (!smtpReady) {
-      console.warn('Ă¢ÂÂ Ă¯Â¸Â  WARNING: SMTP is not configured. Email delivery will fail!')
-      console.warn('   Please check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD')
+    const graphReady = await MicrosoftGraphEmailProvider.verifyConnection()
+    if (!graphReady) {
+      console.warn('Ă¢ÂÂ Ă¯Â¸Â  WARNING: Microsoft Graph is not configured. Email delivery will fail!')
+      console.warn('   Please check GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, GRAPH_SENDER_EMAIL')
     } else {
-      console.log('6.SMTP email service verified successfully!')
+      console.log('6.Microsoft Graph email service verified successfully!')
     }
 
     START_SERVER()

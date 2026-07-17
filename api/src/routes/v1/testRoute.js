@@ -1,115 +1,71 @@
 import express from 'express'
-import { NodemailerProvider } from '~/providers/NodemailerProvider'
+import { MicrosoftGraphEmailProvider } from '~/providers/MicrosoftGraphEmailProvider'
 import { env } from '~/config/environment'
 
 const Router = express.Router()
 
 /**
- * Test SMTP connection and send a test email
- * GET /v1/test/email
- * Query params:
- *   - to: email address to send test email (optional, defaults to ADMIN_EMAIL_ADDRESS)
+ * Send a Microsoft Graph test email.
+ * GET /v1/test/email?to=recipient@example.com
  */
 Router.get('/email', async (req, res) => {
   try {
-    const testEmail = req.query.to || env.ADMIN_EMAIL_ADDRESS
-
-    // Step 1: Test SMTP connection
-    console.log('Testing SMTP connection...')
-    const isConnected = await NodemailerProvider.verifyConnection()
+    const testEmail = req.query.to || env.GRAPH_SENDER_EMAIL
+    const isConnected = await MicrosoftGraphEmailProvider.verifyConnection()
 
     if (!isConnected) {
       return res.status(500).json({
         success: false,
-        message: 'SMTP connection failed',
+        message: 'Microsoft Graph email service is not configured',
         config: {
-          host: env.SMTP_HOST,
-          port: env.SMTP_PORT,
-          user: env.SMTP_USER,
-          hasPassword: !!env.SMTP_PASSWORD,
+          sender: env.GRAPH_SENDER_EMAIL,
+          hasTenantId: !!env.GRAPH_TENANT_ID,
+          hasClientId: !!env.GRAPH_CLIENT_ID,
+          hasClientSecret: !!env.GRAPH_CLIENT_SECRET,
         },
       })
     }
 
-    console.log('SMTP connection successful, sending test email...')
-
-    // Step 2: Try sending a test email
-    const result = await NodemailerProvider.sendEmail(
+    const result = await MicrosoftGraphEmailProvider.sendEmail(
       testEmail,
-      'Test Email from Splitly API',
-      'This is a test email. If you receive this, your SMTP configuration is working correctly!',
-      `
-        <html>
-          <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px;">
-              <h1 style="color: #4CAF50;">✅ SMTP Test Successful!</h1>
-              <p>This is a test email from Splitly API.</p>
-              <p>If you receive this email, your SMTP configuration is working correctly!</p>
-              <hr style="border: 1px solid #eee; margin: 20px 0;">
-              <p style="color: #666; font-size: 12px;">
-                Sent from: ${env.ADMIN_EMAIL_ADDRESS}<br>
-                SMTP Host: ${env.SMTP_HOST}<br>
-                SMTP Port: ${env.SMTP_PORT}
-              </p>
-            </div>
-          </body>
-        </html>
-      `
+      'Test Email from Splitly API (Microsoft Graph)',
+      'This is a test email sent through Microsoft Graph.',
+      '<html><body><h1>Microsoft Graph Test Successful</h1><p>This email was sent through Microsoft Graph.</p></body></html>'
     )
-
-    console.log('Test email sent successfully:', result)
 
     res.json({
       success: true,
       message: `Test email sent successfully to ${testEmail}`,
-      result: {
-        messageId: result.messageId,
-        accepted: result.accepted,
-        rejected: result.rejected,
-        response: result.response,
-      },
-      config: {
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        user: env.SMTP_USER,
-        from: env.ADMIN_EMAIL_ADDRESS,
-      },
+      result,
+      config: { provider: 'Microsoft Graph', sender: env.GRAPH_SENDER_EMAIL },
     })
   } catch (error) {
-    console.error('Test email error:', error)
+    console.error('Microsoft Graph test email error:', error)
     res.status(500).json({
       success: false,
       error: error.message,
-      code: error.code,
-      command: error.command,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       config: {
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        user: env.SMTP_USER,
-        hasPassword: !!env.SMTP_PASSWORD,
+        provider: 'Microsoft Graph',
+        sender: env.GRAPH_SENDER_EMAIL,
+        hasTenantId: !!env.GRAPH_TENANT_ID,
+        hasClientId: !!env.GRAPH_CLIENT_ID,
+        hasClientSecret: !!env.GRAPH_CLIENT_SECRET,
       },
     })
   }
 })
 
 /**
- * Get current SMTP configuration (without sensitive data)
- * GET /v1/test/smtp-config
+ * Get Microsoft Graph configuration status without exposing secrets.
+ * GET /v1/test/graph-config
  */
-Router.get('/smtp-config', async (req, res) => {
+Router.get('/graph-config', async (req, res) => {
   res.json({
-    smtp: {
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      user: env.SMTP_USER,
-      hasPassword: !!env.SMTP_PASSWORD,
-      passwordLength: env.SMTP_PASSWORD?.length || 0,
-      from: {
-        name: env.ADMIN_EMAIL_NAME,
-        address: env.ADMIN_EMAIL_ADDRESS,
-      },
-    },
+    provider: 'Microsoft Graph',
+    sender: env.GRAPH_SENDER_EMAIL,
+    hasTenantId: !!env.GRAPH_TENANT_ID,
+    hasClientId: !!env.GRAPH_CLIENT_ID,
+    hasClientSecret: !!env.GRAPH_CLIENT_SECRET,
   })
 })
 
