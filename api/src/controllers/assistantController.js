@@ -3,6 +3,7 @@ import ApiError from "~/utils/APIError.js";
 import { ObjectId } from 'mongodb'
 import { userModel } from '~/models/index.js'
 import { ClovaXClient } from "~/providers/ClovaStudioProvider.js";
+import { GeminiClient } from '~/providers/GeminiProvider.js'
 import { allTools, categorizeRequestTool } from "~/utils/tools.js";
 import { navigateBillCreateForm, getNewPrompt, getDataForAnalysis } from "~/utils/assistantHelpers";
 
@@ -264,61 +265,8 @@ const processAIRequest = async (req, res, next) => {
 const analysisByAssistant = async (userId) => {
     try {
         const data = await getDataForAnalysis(userId);
-        const client = new ClovaXClient();
-
-        const prompts = {
-            debtAdvice: {
-                prompt: `Bạn là TingTing, trợ lý thân thiện giúp quản lý hóa đơn chia tiền. Hãy đọc dữ liệu về các khoản nợ của người dùng, bao gồm số tiền nợ, hạn thanh toán sắp tới, và các hóa đơn quá hạn. Đưa ra 1-2 lời khuyên ngắn gọn, thiết thực bằng Tiếng Việt để giúp người dùng ưu tiên thanh toán, tránh bị phạt quá hạn, và quản lý nợ hiệu quả. Lời khuyên phải ngắn gọn, rõ ràng và dễ thực hiện.`,
-                dataKey: 'debtsIOwe'
-            },
-            oweAdvice: {
-                prompt: `Bạn là TingTing, trợ lý thân thiện giúp quản lý hóa đơn chia tiền. Hãy đọc dữ liệu về những người nợ tiền người dùng, bao gồm hóa đơn quá hạn, số tiền, và số ngày quá hạn. Đưa ra 1-2 lời khuyên ngắn gọn, thiết thực bằng Tiếng Việt để giúp người dùng nhắc nhở lịch sự hoặc thu tiền sớm, ưu tiên các khoản nợ lớn nhất hoặc lâu nhất, và giảm rủi ro không thu được tiền. Lời khuyên phải ngắn gọn, rõ ràng và dễ thực hiện.`,
-                dataKey: 'debtsOwedToMe'
-            },
-            monthlyAdvice: {
-                prompt: `Bạn là TingTing, trợ lý thân thiện giúp quản lý hóa đơn chia tiền. Hãy đọc dữ liệu chi tiêu của người dùng trong tháng này, bao gồm danh mục, tổng số tiền, và số lượng hóa đơn. Đưa ra dự đoán ngắn gọn về chi tiêu tháng sau và 1-2 lời khuyên thiết thực bằng Tiếng Việt để giúp người dùng quản lý chi tiêu tốt hơn, tối ưu ngân sách, và tránh chi tiêu quá mức. Lời khuyên phải ngắn gọn, rõ ràng và dễ thực hiện.`,
-                dataKey: 'monthlyStats'
-            },
-            productAdvice: {
-                prompt: `Bạn là TingTing, trợ lý thân thiện giúp quản lý hóa đơn chia tiền. Hãy phân tích dữ liệu chi tiêu của người dùng trong tháng này, bao gồm danh mục, tổng số tiền, và số lượng hóa đơn. Xác định những lĩnh vực người dùng đang chi tiêu nhiều nhất và đưa ra 1-2 lời khuyên thiết thực bằng Tiếng Việt để cân bằng chi tiêu, tránh chi tiêu quá mức, và thúc đẩy thói quen tài chính lành mạnh hơn. Lời khuyên phải ngắn gọn, rõ ràng và dễ thực hiện.`,
-                dataKey: 'productsThisMonth'
-            }
-        }
-        const results = {};
-        for (const [key, prompt] of Object.entries(prompts)) {
-
-            const messages = [
-                {
-                    role: 'system',
-                    content: [
-                        {
-                            type: 'text',
-                            text: prompt.prompt,
-                        },
-                    ],
-                },
-                {
-                    role: 'user',
-                    content: `Here is the data for analysis: ${JSON.stringify(data[prompt.dataKey])}`,
-                },
-            ];
-
-            const request = {
-                messages,
-                topP: 0.8,
-                topK: 0,
-                maxTokens: 1000,
-                temperature: 0.5,
-                repetitionPenalty: 1.1,
-                stop: [],
-            };
-
-            const response = await client.createChatCompletion(request);
-            const content = response?.result?.message?.content ?? '';
-            results[key] = content;
-        }
-
-        return results;
+        const client = new GeminiClient();
+        return await client.analyzeSpending(data);
     } catch (error) {
         console.error('Error in analysisByAssistant:', error);
         throw error;
