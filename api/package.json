@@ -9,6 +9,7 @@
   "dependencies": {
     "@babel/runtime": "^7.28.4",
     "@getbrevo/brevo": "^3.0.1",
+    "@google/genai": "^2.12.0",
     "async-exit-hook": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -37,6 +38,7 @@
     "@babel/plugin-transform-runtime": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "babel-plugin-module-resolver": "^5.0.2",
+    "baseline-browser-mapping": "^2.10.43",
     "eslint": "^9.38.0",
     "nodemon": "^3.1.10"
   },
