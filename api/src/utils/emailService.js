@@ -1,4 +1,4 @@
-import { BrevoEmailProvider } from '~/providers/BrevoEmailProvider.js'
+import { MicrosoftGraphEmailProvider } from '~/providers/MicrosoftGraphEmailProvider.js'
 import { WEBSITE_DOMAIN } from './constants'
 
 export const sendPaymentEmail = async ({
@@ -194,7 +194,7 @@ export const sendPaymentEmail = async ({
     `.trim()
 
     try {
-      await BrevoEmailProvider.sendEmail(
+      await MicrosoftGraphEmailProvider.sendEmail(
         recipientEmail,
         `💰 ${payerName} đã thanh toán cho bạn qua Splitly`,
         'Splitly - Quản lý chi tiêu nhóm dễ dàng',
@@ -388,8 +388,8 @@ export const sendPaymentResponseEmail = async ({ payerEmail, payerName, recipien
 </html>
     `.trim()
 
-    // Send email using Brevo
-    await BrevoEmailProvider.sendEmail(
+    // Send email using Microsoft Graph
+    await MicrosoftGraphEmailProvider.sendEmail(
       payerEmail,
       `${statusIcon} ${recipientName} ${statusText} thanh toán qua Splitly`,
       'Splitly - Quản lý chi tiêu nhóm dễ dàng',
@@ -716,8 +716,8 @@ export const sendPaymentReminderEmail = async ({
 </html>
     `.trim()
 
-    // Send email using Brevo
-    await BrevoEmailProvider.sendEmail(
+    // Send email using Microsoft Graph
+    await MicrosoftGraphEmailProvider.sendEmail(
       debtorEmail,
       `⏰ ${creditorName} nhắc nhở bạn thanh toán qua Splitly`,
       'Splitly - Quản lý chi tiêu nhóm dễ dàng',
@@ -1018,8 +1018,8 @@ export const sendBillCreationEmail = async ({
 </html>
     `.trim()
 
-    // Send email using Brevo
-    await BrevoEmailProvider.sendEmail(
+    // Send email using Microsoft Graph
+    await MicrosoftGraphEmailProvider.sendEmail(
       participantEmail,
       `📄 Bạn đã được thêm vào hóa đơn "${billName}"`,
       'Splitly - Quản lý chi tiêu nhóm dễ dàng',
@@ -1313,10 +1313,10 @@ export const sendDebtBalanceEmail = async ({
 </body>
 </html>`
 
-    // Send emails to both users using Brevo
+    // Send emails to both users using Microsoft Graph
     const [result1, result2] = await Promise.allSettled([
-      BrevoEmailProvider.sendEmail(user1Email, `Cân bằng nợ với ${user2Name} - Splitly`, 'Splitly', htmlContent),
-      BrevoEmailProvider.sendEmail(user2Email, `Cân bằng nợ với ${user1Name} - Splitly`, 'Splitly', htmlContent),
+      MicrosoftGraphEmailProvider.sendEmail(user1Email, `Cân bằng nợ với ${user2Name} - Splitly`, 'Splitly', htmlContent),
+      MicrosoftGraphEmailProvider.sendEmail(user2Email, `Cân bằng nợ với ${user1Name} - Splitly`, 'Splitly', htmlContent),
     ])
 
     const success1 = result1.status === 'fulfilled'
@@ -1661,15 +1661,15 @@ export const sendOptOutEmail = async ({
 </html>
     `.trim()
 
-    // Send emails to both debtor and creditor using Brevo
+    // Send emails to both debtor and creditor using Microsoft Graph
     const [debtorResult, creditorResult] = await Promise.allSettled([
-      BrevoEmailProvider.sendEmail(
+      MicrosoftGraphEmailProvider.sendEmail(
         debtorEmail,
         `🚪 Đã từ chối tham gia "${billName}" - Splitly`,
         'Splitly - Quản lý chi tiêu nhóm dễ dàng',
         debtorHtmlContent
       ),
-      BrevoEmailProvider.sendEmail(
+      MicrosoftGraphEmailProvider.sendEmail(
         creditorEmail,
         `🚪 ${debtorName} đã từ chối tham gia "${billName}" - Splitly`,
         'Splitly - Quản lý chi tiêu nhóm dễ dàng',

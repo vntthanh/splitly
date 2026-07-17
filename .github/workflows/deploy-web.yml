@@ -1,8 +1,6 @@
 name: Deploy Splitly Web to VPS
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
