@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: splitly-api-mtyo
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: api
+    buildCommand: npm ci && npm run build
+    startCommand: node build/src/server.js
+    healthCheckPath: /v1/status
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: MONGODB_URI
+        sync: false
+      - key: DATABASE_NAME
+        sync: false
+      - key: ACCESS_JWT_SECRET_KEY
+        sync: false
+      - key: ACCESS_JWT_EXPIRES_IN
+        value: 1h
+      - key: WEBSITE_DOMAIN_DEVELOPMENT
+        sync: false
+      - key: WEBSITE_DOMAIN_PRODUCTION
+        sync: false
+      - key: GRAPH_TENANT_ID
+        sync: false
+      - key: GRAPH_CLIENT_ID
+        sync: false
+      - key: GRAPH_CLIENT_SECRET
+        sync: false
+      - key: GRAPH_SENDER_EMAIL
+        sync: false
+      - key: ADMIN_EMAIL_NAME
+        value: Splitly
+      - key: ADMIN_EMAIL_ADDRESS
+        sync: false
+
+  - type: web
+    name: splitly-web
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: web/dist
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: VITE_API_ROOT
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

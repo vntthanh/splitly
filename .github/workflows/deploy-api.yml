@@ -1,11 +1,6 @@
 name: Deploy Splitly API to VPS
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'api/**'
   workflow_dispatch:
 
 jobs:

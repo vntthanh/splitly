@@ -9,16 +9,16 @@ import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 import { initializeDatabase } from '~/config/initDB'
 import cookieParser from 'cookie-parser'
-import { BrevoEmailProvider } from '~/providers/BrevoEmailProvider'
-import { NodemailerProvider } from '~/providers/NodemailerProvider'
+import { MicrosoftGraphEmailProvider } from '~/providers/MicrosoftGraphEmailProvider'
 import socketIo from 'socket.io'
 import http from 'http'
 import { notificationSocket, setIoInstance } from '~/sockets/notificationSocket'
 
 const START_SERVER = () => {
   const app = express()
-  const hostname = env.APP_HOST || 'localhost'
-  const PORT = env.APP_PORT || 3000
+  // Cloud platforms provide PORT and require the server to listen on all interfaces.
+  const hostname = env.APP_HOST || '0.0.0.0'
+  const PORT = process.env.PORT || env.APP_PORT || 3000
 
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store')
@@ -62,24 +62,14 @@ const START_SERVER = () => {
     await initializeDatabase()
     console.log('4.Database indexes initialized!')
 
-    console.log('5.Verifying email services...')
+    console.log('5.Verifying Microsoft Graph email service...')
 
-    // Verify Brevo (for registration emails)
-    const brevoReady = await BrevoEmailProvider.verifyConnection()
-    if (!brevoReady) {
-      console.warn('⚠️  WARNING: Brevo is not configured. Registration emails will fail!')
-      console.warn('   Please check your BREVO_API_KEY environment variable')
+    const graphReady = await MicrosoftGraphEmailProvider.verifyConnection()
+    if (!graphReady) {
+      console.warn('Ă¢ÂÂ Ă¯Â¸Â  WARNING: Microsoft Graph is not configured. Email delivery will fail!')
+      console.warn('   Please check GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, GRAPH_SENDER_EMAIL')
     } else {
-      console.log('6a.Brevo email service verified successfully!')
-    }
-
-    // Verify Nodemailer/SMTP (for other emails)
-    const smtpReady = await NodemailerProvider.verifyConnection()
-    if (!smtpReady) {
-      console.warn('⚠️  WARNING: SMTP is not configured. Other emails may fail!')
-      console.warn('   Please check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD')
-    } else {
-      console.log('6b.SMTP connection verified successfully!')
+      console.log('6.Microsoft Graph email service verified successfully!')
     }
 
     START_SERVER()
