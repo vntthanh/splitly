@@ -237,7 +237,6 @@ The MVP processes receipt images transiently and stores only user-confirmed stru
 AI receipt scanning improves data entry, but it does not automatically solve:
 
 - multiple payers;
-- cross-bill debt settlement;
 - recurring bills;
 - multi-currency;
 - automatic bank-transfer confirmation.

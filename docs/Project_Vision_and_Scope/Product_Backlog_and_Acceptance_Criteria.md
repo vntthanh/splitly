@@ -10,9 +10,9 @@ The document defines the baseline for planning, implementation, prototype review
 
 | Scope | Decision |
 | --- | --- |
-| **MVP core increment** | Authentication, groups/members, manual bill entry, one payer and selected participants, equal/by-person/by-item splitting, validation, bill detail/history, VietQR assistance, payment declaration/confirmation, creditor reminders, and essential notifications. |
+| **MVP core increment** | Authentication, groups/members, manual bill entry, one payer and selected participants, equal/by-person/by-item splitting, validation, bill detail/history, cross-bill debt clearing, VietQR assistance, payment declaration/confirmation, creditor reminders, and essential notifications. |
 | **MVP Gemini increment** | JPG/JPEG, PNG, or WebP receipt upload up to 10 MB; Gemini 2.5 Flash extraction; editable draft review/correction; and manual fallback. The user still chooses payer, participants, and allocation method. |
-| **Post-MVP backlog** | PDF receipt input, TingTing chatbot, advanced reports, cross-bill/group debt simplification, AI payer recommendation, multiple payers, automatic bank verification, wallet/payment gateway, recurring bills, exports, multi-currency, and a separate broker/microservice messaging platform. The MongoDB outbox and notification worker remain part of the MVP architecture. |
+| **Post-MVP backlog** | PDF receipt input, TingTing chatbot, advanced reports, AI payer recommendation, multiple payers, automatic bank verification, wallet/payment gateway, recurring bills, exports, multi-currency, and a separate broker/microservice messaging platform. The MongoDB outbox and notification worker remain part of the MVP architecture. |
 
 ### 1.2 Business rules used by all bill stories
 
@@ -22,6 +22,7 @@ The document defines the baseline for planning, implementation, prototype review
 4. For item-based splitting, an item may be assigned to one or more participants. The item subtotal, taxes, discounts, service charge, or other difference are allocated proportionally so that the final participant total equals the confirmed bill total.
 5. The payer's own share is recorded as already paid; a participant may make a partial payment. A bill is settled only when every non-opted-out participant has paid their owed amount.
 6. OCR output is a draft, never final financial data. It remains editable and cannot bypass the normal validation and save rules.
+7. Debt clearing derives each accessible user's net position from outstanding bill obligations, offsets reciprocal obligations, and produces an explainable set of payment instructions. It never initiates a transfer or treats a suggested payment as bank-confirmed.
 
 ## 2. Product backlog
 
@@ -46,6 +47,7 @@ Priority: **P0** = essential MVP flow; **P1** = supporting MVP capability; **P2*
 | US-SPLIT-15 | E5 Insights | Personal dashboard | As a user, I want to see monthly spending and amounts owed/to receive, so that I can act on my finances. | P1 | 5 | AC-15 | Bills and payment status |
 | US-SPLIT-16 | E5 Insights | Advanced monthly report | As a user, I want a monthly spending report by trend and category, so that I can understand my expense pattern. | P2 | 8 | AC-16 | Post-MVP; categorised bills; report API |
 | US-SPLIT-17 | E6 Transparency | Activity and notifications | As an affected user, I want visible bill events and notifications, so that changes and reminders are traceable. | P1 | 5 | AC-17 | Bill/payment/group events; transactional outbox; notification worker |
+| US-SPLIT-22 | E4 Payments | Cross-bill debt clearing | As a group member, I want to see my net obligations across accessible unpaid bills and the minimum set of payment instructions, so that reciprocal debts can be cleared without losing the underlying bill history. | P0 | 8 | AC-22 | US-SPLIT-09; outstanding-payment data; authoritative debt-calculation service |
 | US-SPLIT-18 | E7 AI receipt input | Upload and validate receipt | As a bill creator, I want to upload a supported receipt image, so that the system can prepare a draft safely. | P0 | 5 | AC-18 | US-SPLIT-01; image validation; Gemini adapter |
 | US-SPLIT-19 | E7 AI receipt input | Extract draft | As a bill creator, I want Gemini 2.5 Flash to extract receipt fields and items into an editable draft, so that I type less information. | P0 | 8 | AC-19 | US-SPLIT-18; Gemini adapter |
 | US-SPLIT-20 | E7 AI receipt input | Review and correct draft | As a bill creator, I want to correct extracted results before allocation, so that an AI error cannot become a wrong bill. | P0 | 5 | AC-20 | US-SPLIT-19; US-SPLIT-05–09 |
@@ -78,6 +80,7 @@ All examples below use VND. “Allocated total” means the final sum of partici
 | AC-19 | US-SPLIT-19 | **Given** a validated receipt, **when** Gemini 2.5 Flash returns a result, **then** the system creates an editable draft containing each available merchant/bill name, date, category, line item name, quantity, unit price, line amount, subtotal, tax, discount, and total. **When** a field is missing or uncertain, **then** it is visibly marked rather than invented. |
 | AC-20 | US-SPLIT-20 | **Given** an OCR draft with an uncertain price or missing item, **when** the creator edits, adds, or removes values and confirms them, **then** the corrected values carry into the normal Create Bill form. **When** the creator attempts to save with unresolved mandatory data or an allocation mismatch, **then** normal AC-05 to AC-09 validation blocks the save. |
 | AC-21 | US-SPLIT-21 | **Given** OCR times out, is unavailable, or returns invalid content, **when** processing ends, **then** the user sees an understandable error and can retry, replace the image, or choose manual entry. No bill is created from a failed scan. |
+| AC-22 | US-SPLIT-22 | **Given** accessible unpaid bill obligations in a group, **when** a member opens debt clearing, **then** the system shows each included outstanding obligation, each member's net balance, and deterministic payment instructions whose total payer and receiver amounts are equal. **When** A owes B **100,000 VND** and B owes A **40,000 VND**, **then** the instructions show only A paying B **60,000 VND**. **When** an underlying bill payment changes, the next calculation reflects it without altering bill history. The result is informational/payment assistance only and never marks a bank transfer or bill payment as confirmed. |
 
 ## 4. KPI plan
 
@@ -206,6 +209,7 @@ These terms must be used consistently in Vietnamese UI copy, stakeholder discuss
 | **By person** | The creator enters final amounts or relative consumption for participants; final amounts must still equal the confirmed total. |
 | **By item** | One or more participants are assigned to each item; shared items are divided among their assigned people and any bill-level adjustment is distributed proportionally. |
 | **Settled** | Every eligible, non-opted-out participant has paid at least their amount owed. It does not prove that a bank transfer happened automatically. |
+| **Debt clearing** | A calculated, explainable set of net payment instructions across accessible outstanding bills. It offsets reciprocal obligations but does not delete underlying bills, initiate a transfer, or prove payment. |
 | **Opt out** | A securely verified participant disputes their inclusion and is excluded from the app's outstanding-debt view; the action remains auditable. |
 | **OCR draft** | Editable data extracted from a receipt image. It is not a confirmed financial record until the creator reviews, allocates, validates, and saves it. |
 
@@ -214,7 +218,7 @@ These terms must be used consistently in Vietnamese UI copy, stakeholder discuss
 | Objective | Customer/business value | Success signal | Backlog items |
 | --- | --- | --- | --- |
 | BV-01 Fair allocation | Reduces calculation errors and disputes about who consumed what. | K2 is 100%; fewer allocation corrections. | US-SPLIT-05–09 |
-| BV-02 Clear reimbursement | Makes each person's debt, payment, and settlement state visible. | K7 improves; users can identify remaining balance. | MVP: US-SPLIT-10–13; post-MVP: US-SPLIT-14 |
+| BV-02 Clear reimbursement | Makes each person's debt, payment, settlement state, and net clearing instruction visible. | K7 improves; users can identify remaining balance. | MVP: US-SPLIT-10–13, US-SPLIT-22; post-MVP: US-SPLIT-14 |
 | BV-03 Lower follow-up friction | Gives creditors a structured, auditable way to remind debtors. | K6 reminder conversion. | US-SPLIT-13, US-SPLIT-17 |
 | BV-04 Less repeated setup | Lets recurring social groups reuse member lists and profiles. | Reduced time to start a bill; group reuse feedback. | US-SPLIT-02–05 |
 | BV-05 Spending awareness | Turns bill data into actionable personal spending information. | Dashboard/report usage and report accuracy checks. | US-SPLIT-15–16 |

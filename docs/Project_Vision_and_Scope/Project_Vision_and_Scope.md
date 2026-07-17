@@ -39,7 +39,7 @@ Splitly will be a Vietnamese-localized shared-expense application with reusable 
 
 ### 5.3 Future Position
 
-After the MVP is validated, Splitly may add PDF receipt input, the TingTing chatbot, advanced reports, cross-bill debt simplification, and AI payer recommendations. These items are opportunities, not current commitments.
+After the MVP is validated, Splitly may add PDF receipt input, the TingTing chatbot, advanced reports, and AI payer recommendations. Cross-bill debt clearing is a current MVP commitment: it will calculate explainable net payment instructions without initiating or automatically verifying transfers.
 
 ### 5.4 Positioning Statement
 
@@ -117,6 +117,7 @@ Tracks shared household purchases and utilities and needs transparent obligation
 - Gemini 2.5 Flash extraction into an editable draft with explicit user review and manual fallback.
 - Item assignment, shared-item calculation, and a documented rule for tax, fee, tip, discount, and rounding adjustments.
 - Bill validation, saved detail, history, and participant-level payment state.
+- Cross-bill debt clearing that shows explainable net obligations and payment instructions while retaining the source bill records.
 - VietQR-compatible payment instructions without fund custody or automatic bank verification.
 - Payment declaration followed by creditor confirmation or rejection.
 - Creditor-initiated reminders and essential in-app/real-time or email notifications.
@@ -128,7 +129,6 @@ Tracks shared household purchases and utilities and needs transparent obligation
 
 - TingTing chatbot.
 - Advanced analytics and reports beyond essential MVP status summaries.
-- Cross-bill or group-wide debt simplification.
 - AI payer recommendation.
 - PDF receipt upload; maintain it in the future backlog.
 - Multiple upfront payers for one bill.
@@ -183,7 +183,6 @@ Splitly stores and presents application records. Gemini prepares a receipt draft
 | PDF receipt input | Requires a separate validation, rendering, security, and multi-page extraction contract. |
 | TingTing chatbot | Helpful but not necessary to complete the core expense-sharing workflow. |
 | Advanced reports | Depends on reliable bill/payment data and validated user demand. |
-| Cross-bill debt simplification | Adds calculation, explanation, and dispute complexity beyond bill-level settlement. |
 | AI payer recommendation | Requires evidence of user value, explainability, and acceptable privacy behavior. |
 | Separate broker or independently extracted notification service | Add only when measured reliability, scale, or ownership needs exceed the MongoDB outbox and modular worker. |
 | Multiple payers and multi-currency | Require material changes to the domain and calculation model. |

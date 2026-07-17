@@ -29,25 +29,25 @@ The Splitly column describes the proposed product behavior. It is not a claim th
 | Split a shared item | **Planned** - equal or item-based allocation | **P** - item assignment plus custom split settings; exact per-line shared rule not detailed | **P** - parts or custom amounts at expense level | **P** - weighted expense splits; exact receipt-line rule not evidenced | **P** - percentage, shares or amounts at expense level |
 | Allocate VAT, service fee and discount transparently | **Planned** - explicit adjustment rule and reconciliation | **U** | **U** | **U** | **U** |
 | Multiple people pay upfront | **Planned decision** - assess whether multi-payer receipts belong in the first release | **Y** - web supports `2+ people paid` | **U** | **Y** - advertises multiple people paid | **U** |
-| Optimize or clear final debts | **Post-MVP** - benchmark for later validation | **Y** - `simplify debts` restructures debts and minimizes payments | **Y** - settlement suggestions limit transactions | **Y** - explicitly minimizes transfers | **Y** - reimbursement optimization |
+| Optimize or clear final debts | **Planned** - transparent cross-bill netting and payment instructions | **Y** - `simplify debts` restructures debts and minimizes payments | **Y** - settlement suggestions limit transactions | **Y** - explicitly minimizes transfers | **Y** - reimbursement optimization |
 | VietQR request for the final amount | **Planned** - final balance becomes a VietQR request | **N** - generic payment integrations are advertised, not VietQR | **N** - payment requests, no VietQR evidence | **N** - no VietQR evidence | **N** - no VietQR evidence |
 | Track paid / unpaid and remind | **Planned** - bill-linked payment status and reminders | **Y** - payments can be recorded | **Y** - payment requests and balances | **Y** - debt can be marked settled and reminders are evidenced | **P** - reimbursements are advertised; reminder/status detail not evidenced |
 
 ## 4. Debt simplification benchmark
 
-Debt simplification can remove redundant transfers after several shared bills, but it is not required to complete the approved Splitly MVP workflow.
+Debt clearing can remove redundant transfers after several shared bills and is part of the approved Splitly MVP workflow. The planned capability calculates transparent net obligations and payment instructions; it does not initiate transfers or independently confirm them.
 
 | Aspect | Splitly | Splitwise |
 | --- | --- | --- |
-| MVP position | Splitly tracks and settles obligations within each confirmed bill. Cross-bill netting is deferred. | `Simplify debts` restructures group and friendship debts to minimize the total number of payments without changing each person's total balance. |
-| Mutual-debt example | A future version could offset A owing B 10,000 VND against B owing A 2,000 VND, but the MVP retains the two bill-level records. | Splitwise can simplify reciprocal balances and longer group chains into fewer payments. |
-| Business implication | The MVP focuses on accurate receipt entry, explainable allocation, confirmation, reminders, and VietQR for the bill-level amount. | Splitwise is the benchmark if debt simplification enters the future backlog. |
+| MVP position | Splitly calculates cross-bill net payment instructions from outstanding obligations while retaining the underlying bill records. | `Simplify debts` restructures group and friendship debts to minimize the total number of payments without changing each person's total balance. |
+| Mutual-debt example | The MVP offsets A owing B 10,000 VND against B owing A 2,000 VND and shows one 8,000 VND instruction from A to B, with both source obligations visible. | Splitwise can simplify reciprocal balances and longer group chains into fewer payments. |
+| Business implication | The MVP focuses on accurate receipt entry, explainable allocation, clearing instructions, confirmation, reminders, and VietQR for the resulting net amount. | Splitwise remains a benchmark for debt-simplification behavior. |
 
-No cross-bill clearing algorithm is committed for the MVP. Any future rule requires separate requirements, calculation invariants, explanation, and test cases.
+The MVP commits to a deterministic cross-bill clearing algorithm. Its requirements include conservation of net balances, explanation of included obligations and generated instructions, authorization over all included data, and tests for reciprocal and multi-party debts.
 
 Splitwise's official help describes `simplify debts` as restructuring debts within groups and across friendships, preserving each person's total while reducing payment count. [Splitwise debt simplification](https://feedback.splitwise.com/knowledgebase/articles/107220-what-is-debt-simplification)
 
-**Positioning consequence:** Cross-bill debt simplification is a useful benchmark but is deferred beyond the Splitly MVP. The initial product should differentiate through an explainable receipt-to-bill workflow, bill-level payment status, and a local VietQR request without claiming debt simplification as a current capability.
+**Positioning consequence:** Cross-bill debt clearing is a current, planned MVP capability. The initial product should differentiate through an explainable receipt-to-bill workflow, transparent clearing instructions, bill-level payment status, and a local VietQR request, without claiming to transfer or independently verify payments.
 
 ## 5. Competitor assessment
 

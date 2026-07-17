@@ -73,7 +73,7 @@ No hourly rate is assumed without sponsor or course guidance.
 - Each account and API key has an assigned owner; credentials are not shared or committed to the repository.
 - Gemini requests used for testing should use representative but synthetic or anonymized receipt data when possible.
 - Lower-priority work is deferred before requesting more time or budget.
-- PDF input, TingTing chatbot, advanced reports, cross-bill debt simplification, and AI payer recommendation are maintained as future backlog and consume no MVP capacity unless change control approves them.
+- PDF input, TingTing chatbot, advanced reports, and AI payer recommendation are maintained as future backlog and consume no MVP capacity unless change control approves them. Cross-bill debt clearing is planned MVP work and must include calculation, explanation, and test capacity.
 
 ## 8. Pricing Reference
 

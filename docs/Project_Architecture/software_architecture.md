@@ -30,7 +30,7 @@ This is the best fit for a six-member, ten-week greenfield project: one backend 
 
 * Shared-item assignment and proportional distribution of the difference between item subtotal and final total.
 
-* Debt summary, payment reminders, confirmation, and paid/unpaid status.
+* Debt summary, cross-bill debt clearing with explainable net payment instructions, payment reminders, confirmation, and paid/unpaid status.
 
 * VietQR image generation, activity history, essential dashboard status, email, and in-app/real-time notifications.
 
@@ -48,7 +48,7 @@ This is the best fit for a six-member, ten-week greenfield project: one backend 
 
 * Automatic acceptance of OCR results without user verification.
 
-* PDF receipt input, advanced reports, the TingTing chatbot, cross-bill debt simplification, and AI payer recommendation.
+* PDF receipt input, advanced reports, the TingTing chatbot, and AI payer recommendation.
 
 * Separate message broker such as Kafka or RabbitMQ; the MVP uses MongoDB as the transactional outbox store.
 

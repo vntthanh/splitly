@@ -58,6 +58,7 @@ Splitly differentiates itself through three bill-splitting methods, group and bi
 * Three splitting methods: equal split, custom amounts by person, and by-item split, including tax/discount adjustment under an approved rule.
 * Group and member management and bill-group association for authenticated users.
 * Bill-level payment-status tracking, payment declaration, creditor confirmation/rejection, reminders, and an essential activity trail.
+* Cross-bill debt clearing that calculates transparent net obligations and payment instructions while preserving underlying bill records; it does not initiate or automatically confirm bank transfers.
 * JPG/JPEG, PNG, or WebP receipt images up to 10 MB processed through Gemini 2.5 Flash, with structured extraction and mandatory user review/correction before bill creation.
 * Payment assistance: bank name/account, VietQR image, payment declaration, and recipient confirmation/rejection through an expiring token.
 * Transactional outbox and notification worker for retryable activity, Socket.IO, and SMTP/email delivery without coupling external delivery to financial transactions.
@@ -70,7 +71,7 @@ Splitly differentiates itself through three bill-splitting methods, group and bi
 * Payment gateways with webhook/automatic reconciliation, including PayOS, MoMo, ZaloPay, or cards; the proposed VietQR flow only generates payment instructions and uses manual confirmation.
 * Native iOS/Android applications, offline-first operation, or offline synchronization.
 * Multiple currencies, exchange rates, recurring bills, subscriptions, commercial billing, PDF receipt input, or accounting integrations.
-* TingTing chatbot, advanced reports, cross-bill debt simplification, AI payer recommendation, guest lifecycle, or multiple payers for one bill.
+* TingTing chatbot, advanced reports, AI payer recommendation, guest lifecycle, or multiple payers for one bill.
 * Automated dispute decisions, lending/credit, or legally binding personal financial advice.
 * International expansion, OCR for every language/format, or a guarantee of perfect accuracy.
 * Large-scale production deployment or a 24/7 SLA before budget, security review, and operations receive sponsor approval.

@@ -52,7 +52,7 @@ Direct competitors confirm that shared-expense tracking has demand:
 | Settle Up | Weighted splits, multiple people paid, reminders and minimized transfers. | Confirms the importance of complex settlement cases. |
 | Spliit | Open-source/no-account model, beta AI scan and reimbursement optimization. | Shows that receipt scanning alone is not a durable differentiator. |
 
-Splitwise officially describes `simplify debts` as restructuring debts within groups and friendships without changing each person's total balance while reducing payment count. This is a useful benchmark, but cross-bill debt simplification is deferred beyond the Splitly MVP. The MVP instead keeps each confirmed bill, its participant obligations, payment instructions, and status explainable.
+Splitwise officially describes `simplify debts` as restructuring debts within groups and friendships without changing each person's total balance while reducing payment count. This is a useful benchmark for Splitly's MVP debt-clearing capability: Splitly will calculate explainable cross-bill net payment instructions while preserving each confirmed bill, its participant obligations, and status.
 
 The rationale for Splitly is to combine an explainable local receipt result, bill-level allocation, payment confirmation, and a VietQR request in one user journey. The detailed comparison is in [Competitor_Analysis.md](Competitor_Analysis.md).
 
@@ -81,7 +81,7 @@ This positioning is credible only if Splitly does three things better than a use
 
 | Value | Why it matters |
 | --- | --- |
-| Less payer coordination work | Receipt entry, bill allocation, payment status, and payment request are connected rather than copied between tools. Cross-bill debt simplification is deferred. |
+| Less payer coordination work | Receipt entry, bill allocation, payment status, debt clearing, and payment request are connected rather than copied between tools. |
 | Greater trust | Transparent personal items, shared items and receipt adjustments reduce disputes. |
 | Fewer transfers | Reciprocal amounts can be offset to a single net obligation. |
 | Lower repayment friction | The final amount becomes a VietQR request instead of manually entered bank-transfer fields. |

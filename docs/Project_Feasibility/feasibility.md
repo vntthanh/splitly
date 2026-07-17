@@ -35,7 +35,7 @@ The target users—students, young professionals, roommates, and travel or dinin
 
 Operational feasibility is plausible rather than guaranteed. It must be validated with a representative UAT group using measurable tasks: complete a bill, understand the allocation, correct an OCR error, obtain payment instructions, confirm a payment, and identify unpaid obligations.
 
-Advanced reports, the TingTing chatbot, cross-bill debt simplification, AI payer recommendation, and PDF receipt input remain post-MVP backlog items. Excluding them reduces delivery and adoption risk during the ten-week baseline.
+Advanced reports, the TingTing chatbot, AI payer recommendation, and PDF receipt input remain post-MVP backlog items. Cross-bill debt clearing is included in the baseline and requires deterministic netting, an explanation of included obligations, and exact-balance tests; it remains payment assistance rather than bank settlement.
 
 ## 5. Economic Feasibility
 
