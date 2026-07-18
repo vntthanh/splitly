@@ -1,0 +1,4 @@
+DEMO MART
+Item A | 1 | 40.000 | 40.000
+Item B | 1 | 30.000 | 30.000
+Total: 100.000 VND

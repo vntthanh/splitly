@@ -193,4 +193,4 @@ This project was developed for the **Naver AI Hackathon** showcasing:
 
 See individual README files in `web/` and `api/` directories for detailed scripts and development guides.
 
-123
+1231244

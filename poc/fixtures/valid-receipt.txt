@@ -1,0 +1,12 @@
+SPLITLY COFFEE
+123 Nguyen Van Cu, Quan 5, TP HCM
+Invoice: HD-2026-0718
+Date: 18/07/2026 10:30
+Ca phe sua | 2 | 35.000 | 70.000
+Banh mi | 1 | 30.000 | 30.000
+Subtotal: 100.000 VND
+Discount: 10.000 VND
+Tax: 0 VND
+Service fee: 0 VND
+Total: 90.000 VND
+Payment: Cash
