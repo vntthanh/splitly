@@ -1,1010 +1,125 @@
-import Layout from '~/components/Layout'
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Alert, Box, Button, Card, Chip, CircularProgress, Container, Divider, Stack, Typography } from '@mui/material'
 import {
-  Box,
-  Typography,
-  Card,
-  Button,
-  Checkbox,
-  Dialog,
-  DialogContent,
-  IconButton,
-  FormControlLabel,
-  CircularProgress,
-} from '@mui/material'
-import {
-  FilterList as FilterListIcon,
-  Receipt as ReceiptIcon,
-  Group as GroupIcon,
-  CheckCircle as CheckCircleIcon,
-  Payment as PaymentIcon,
-  PersonAdd as PersonAddIcon,
-  PersonRemove as PersonRemoveIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Notifications as NotificationsIcon,
-  Cancel as CancelIcon,
-  AddCircle as AddCircleIcon,
-  Close as CloseIcon,
-  DoneAll as DoneAllIcon,
+  AddCircleOutline as AddIcon,
+  CheckCircleOutline as CheckIcon,
+  DeleteOutline as DeleteIcon,
+  EditOutlined as EditIcon,
+  GroupOutlined as GroupIcon,
+  NotificationsActiveOutlined as ReminderIcon,
+  PaidOutlined as PaidIcon,
+  PersonAddAltOutlined as PersonAddIcon,
+  PersonRemoveOutlined as PersonRemoveIcon,
+  Refresh as RefreshIcon,
+  ReceiptLongOutlined as ReceiptIcon,
+  Timeline as TimelineIcon,
 } from '@mui/icons-material'
-import { COLORS } from '~/theme'
-import { useSelector, useDispatch } from 'react-redux'
-import { selectCurrentUser } from '~/redux/user/userSlice'
-import {
-  fetchNotificationsAPI,
-  markNotificationReadAPI,
-  markAllNotificationsReadAPI,
-  addNotification,
-  setNotificationRead,
-  setAllNotificationsRead,
-  setUnreadCount,
-  selectCurrentNotifications,
-  selectNotificationTotal,
-  selectUnreadCount,
-  selectHasMore,
-  selectNotificationLoading,
-  selectNotificationLoadingMore,
-} from '~/redux/notification/notificationSlice'
-import { formatDate, formatDateTime } from '~/utils/formatters'
-import { socketIoInstance } from '~/main'
-import { toast } from 'react-toastify'
-import Container from '@mui/material/Container'
+import Layout from '~/components/Layout'
+import { fetchActivitiesAPI } from '~/apis'
 
-// Helper function to get navigation path based on notification
-const getNavigationPath = (notification) => {
-  const { resourceType, resourceId, type } = notification
+const PAGE_SIZE = 20
+const categories = {
+  bill: ['bill_created', 'bill_updated', 'bill_deleted', 'bill_paid', 'bill_settled', 'bill_reminder_sent', 'bill_user_opted_out', 'bill_participation_declined'],
+  payment: ['payment_initiated', 'payment_confirmation_requested', 'payment_confirmed', 'payment_rejected', 'debt_balanced'],
+  group: ['group_created', 'group_updated', 'group_deleted', 'group_member_added', 'group_member_removed', 'group_bill_added'],
+}
+const config = {
+  bill_created: [AddIcon, '#7E57C2', 'Created bill'], bill_updated: [EditIcon, '#FB8C00', 'Updated bill'],
+  bill_deleted: [DeleteIcon, '#E53935', 'Deleted bill', true], bill_paid: [PaidIcon, '#43A047', 'Recorded payment'],
+  bill_settled: [CheckIcon, '#43A047', 'Settled bill'], bill_reminder_sent: [ReminderIcon, '#EF6C00', 'Sent payment reminder'],
+  bill_user_opted_out: [PersonRemoveIcon, '#E53935', 'Opted out of bill'],
+  bill_participation_declined: [PersonRemoveIcon, '#E53935', 'Declined bill participation'], payment_initiated: [PaidIcon, '#1E88E5', 'Initiated payment'],
+  payment_confirmation_requested: [ReminderIcon, '#1E88E5', 'Payment confirmation needed'],
+  payment_confirmed: [CheckIcon, '#43A047', 'Confirmed payment'], payment_rejected: [DeleteIcon, '#E53935', 'Rejected payment'],
+  debt_balanced: [PaidIcon, '#00897B', 'Balanced debts'], group_created: [GroupIcon, '#8E24AA', 'Created group'],
+  group_updated: [EditIcon, '#8E24AA', 'Updated group'], group_deleted: [DeleteIcon, '#E53935', 'Deleted group', true],
+  group_member_added: [PersonAddIcon, '#00ACC1', 'Added group member'], group_member_removed: [PersonRemoveIcon, '#EF6C00', 'Removed group member'],
+  group_bill_added: [ReceiptIcon, '#43A047', 'Added bill to group'],
+}
 
-  // Don't navigate for deleted resources
-  if (type?.includes('deleted')) {
-    return null
+const describe = (activity) => {
+  const { details = {}, activityType } = activity
+  if (details.description) return details.description
+    const bill = details.billName ? `"${details.billName}"` : 'a bill'
+    const group = details.groupName ? `"${details.groupName}"` : 'a group'
+  const amount = details.amountPaid ?? details.amount
+    const money = Number.isFinite(amount) ? ` (${amount.toLocaleString('vi-VN')} VND)` : ''
+  const descriptions = {
+    bill_created: `Created ${bill}`, bill_updated: `Updated ${bill}`, bill_deleted: `Deleted ${bill}`,
+    bill_paid: `Recorded a payment for ${bill}${money}`, bill_settled: `Settled ${bill}`,
+    bill_reminder_sent: `Sent a payment reminder for ${bill}`, bill_user_opted_out: `Opted out of ${bill}`,
+    payment_initiated: `Initiated a payment${money}`,
+    payment_confirmation_requested: `${details.debtorName || 'A participant'} reported paying${money}. Your confirmation is pending.`,
+    payment_confirmed: `Confirmed a payment${money}`,
+    payment_rejected: `Rejected a payment${money}`, debt_balanced: 'Balanced debts', group_created: `Created ${group}`,
+    group_updated: `Updated ${group}`, group_deleted: `Deleted ${group}`, group_member_added: `Added a member to ${group}`,
+    group_member_removed: `Removed a member from ${group}`, group_bill_added: `Added ${bill} to ${group}`,
   }
-
-  switch (resourceType) {
-    case 'bill':
-      return `/bills/${resourceId}`
-    case 'group':
-      return `/groups/${resourceId}`
-    case 'user':
-      // For payment activities, navigate to debt page
-      return '/debt'
-    default:
-      return null
-  }
+  return descriptions[activityType] || 'Recorded an activity'
 }
 
-// Notification type configurations based on new NOTIFICATION_TYPES
-const notificationTypeConfig = {
-  // Bill notifications
-  bill_added: {
-    icon: ReceiptIcon,
-    color: '#EF9A9A',
-  },
-  bill_updated: {
-    icon: EditIcon,
-    color: '#FF9800',
-  },
-  bill_deleted: {
-    icon: DeleteIcon,
-    color: '#f44336',
-  },
-  bill_reminder: {
-    icon: NotificationsIcon,
-    color: '#FF5722',
-  },
-  bill_settled: {
-    icon: CheckCircleIcon,
-    color: '#4CAF50',
-  },
-
-  // Payment notifications
-  payment_received: {
-    icon: PaymentIcon,
-    color: '#2196F3',
-  },
-  payment_confirmed: {
-    icon: CheckCircleIcon,
-    color: '#4CAF50',
-  },
-  payment_rejected: {
-    icon: CancelIcon,
-    color: '#f44336',
-  },
-  payment_initiated: {
-    icon: PaymentIcon,
-    color: '#2196F3',
-  },
-
-  // Group notifications
-  group_invited: {
-    icon: GroupIcon,
-    color: '#9C27B0',
-  },
-  group_updated: {
-    icon: EditIcon,
-    color: '#9C27B0',
-  },
-  group_deleted: {
-    icon: DeleteIcon,
-    color: '#f44336',
-  },
-  group_bill_added: {
-    icon: AddCircleIcon,
-    color: '#4CAF50',
-  },
-  group_member_added: {
-    icon: PersonAddIcon,
-    color: '#00BCD4',
-  },
-  group_member_removed: {
-    icon: PersonRemoveIcon,
-    color: '#FF5722',
-  },
-}
-
-// Notification type checkbox options for filter dialog
-const notificationTypeCheckboxOptions = [
-  // Bill notifications
-  { value: 'bill_added', label: 'Thêm hóa đơn', category: 'bill' },
-  { value: 'bill_updated', label: 'Cập nhật hóa đơn', category: 'bill' },
-  { value: 'bill_deleted', label: 'Xóa hóa đơn', category: 'bill' },
-  { value: 'bill_reminder', label: 'Nhắc nhở hóa đơn', category: 'bill' },
-  { value: 'bill_settled', label: 'Quyết toán hóa đơn', category: 'bill' },
-  // Payment notifications
-  { value: 'payment_received', label: 'Nhận thanh toán', category: 'payment' },
-  { value: 'payment_confirmed', label: 'Xác nhận thanh toán', category: 'payment' },
-  { value: 'payment_rejected', label: 'Từ chối thanh toán', category: 'payment' },
-  { value: 'payment_initiated', label: 'Khởi tạo thanh toán', category: 'payment' },
-  // Group notifications
-  { value: 'group_invited', label: 'Mời vào nhóm', category: 'group' },
-  { value: 'group_updated', label: 'Cập nhật nhóm', category: 'group' },
-  { value: 'group_deleted', label: 'Xóa nhóm', category: 'group' },
-  { value: 'group_bill_added', label: 'Thêm hóa đơn vào nhóm', category: 'group' },
-  { value: 'group_member_added', label: 'Thêm thành viên', category: 'group' },
-  { value: 'group_member_removed', label: 'Xóa thành viên', category: 'group' },
-]
-
-// All notification types array
-const allNotificationTypes = notificationTypeCheckboxOptions.map((opt) => opt.value)
-
-// Group notifications by date
-const groupNotificationsByDate = (notifications) => {
-  const grouped = {}
-  notifications.forEach((notification) => {
-    const dateKey = formatDate(notification.createdAt)
-    if (!grouped[dateKey]) {
-      grouped[dateKey] = []
-    }
-    grouped[dateKey].push(notification)
-  })
-  // Sort by date descending
-  const sortedKeys = Object.keys(grouped).sort((a, b) => {
-    const dateA = new Date(a.split('/').reverse().join('-'))
-    const dateB = new Date(b.split('/').reverse().join('-'))
-    return dateB - dateA
-  })
-  return sortedKeys.map((date) => ({
-    date,
-    notifications: grouped[date].sort((a, b) => b.createdAt - a.createdAt),
-  }))
-}
-
-// Notification Card Component
-const NotificationCard = ({ notification, onMarkAsRead }) => {
+const ActivityCard = ({ activity }) => {
   const navigate = useNavigate()
-  const config = notificationTypeConfig[notification.type] || {
-    icon: ReceiptIcon,
-    color: '#757575',
-  }
-  const IconComponent = config.icon
-
-  // Get navigation path
-  const navigationPath = getNavigationPath(notification)
-  const isClickable = navigationPath !== null
-
-  // Handle card click
-  const handleCardClick = async () => {
-    // Mark as read if not already read
-    if (!notification.isRead && onMarkAsRead) {
-      onMarkAsRead(notification._id)
-    }
-    if (isClickable) {
-      navigate(navigationPath)
-    }
-  }
-
-  return (
-    <Box sx={{ position: 'relative', pl: 4 }}>
-      {/* Timeline icon */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: -32,
-          top: 8,
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          background: '#fff',
-          boxShadow: '0px 10px 15px 0px rgba(0,0,0,0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2,
-        }}
-      >
-        <IconComponent sx={{ fontSize: 20, color: config.color }} />
+  const [Icon = TimelineIcon, color = '#757575', title = 'Activity', deleted] = config[activity.activityType] || []
+  const paymentBillId = activity.details?.billId || activity.details?.priorityBill ||
+    (activity.resourceType === 'bill' && activity.resourceId !== activity.details?.paymentId ? activity.resourceId : null)
+  const isPaymentActivity = categories.payment.includes(activity.activityType)
+  const isConfirmationRequest = activity.activityType === 'payment_confirmation_requested'
+  const canNavigate = !deleted && (paymentBillId || (!isPaymentActivity && activity.resourceId && ['bill', 'group'].includes(activity.resourceType)))
+  const destination = paymentBillId
+    ? `/bills/${paymentBillId}${isConfirmationRequest ? `?confirmPayment=1&debtorId=${activity.details?.debtorId || activity.resourceId}` : ''}`
+    : activity.resourceType === 'bill' ? `/bills/${activity.resourceId}` : `/groups/${activity.resourceId}`
+  return <Card onClick={() => canNavigate && navigate(destination)} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: 'none', cursor: canNavigate ? 'pointer' : 'default', '&:hover': canNavigate ? { borderColor: 'primary.main', boxShadow: 1 } : undefined }}>
+    <Stack direction="row" spacing={2} sx={{ p: 2.25, alignItems: 'flex-start' }}>
+      <Box sx={{ color, bgcolor: `${color}14`, borderRadius: '50%', display: 'grid', height: 40, placeItems: 'center', width: 40 }}><Icon fontSize="small" /></Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Stack direction="row" justifyContent="space-between" spacing={2}><Typography fontWeight={700}>{title}</Typography><Typography color="text.secondary" sx={{ fontSize: 12, whiteSpace: 'nowrap' }}>{new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(new Date(activity.createdAt))}</Typography></Stack>
+        <Typography color="text.secondary" sx={{ mt: 0.5 }}>{describe(activity)}</Typography>
       </Box>
-
-      {/* Notification Card */}
-      <Card
-        onClick={handleCardClick}
-        sx={{
-          borderRadius: '16px',
-          border: '1px solid',
-          borderColor: notification.isRead ? 'divider' : 'primary.main',
-          p: 3,
-          backgroundColor: notification.isRead ? '#ffffff' : 'rgba(206, 147, 216, 0.05)',
-          cursor: isClickable ? 'pointer' : 'default',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': isClickable
-            ? {
-                borderColor: 'primary.main',
-                boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
-              }
-            : {},
-        }}
-      >
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {/* Content */}
-          <Box sx={{ flex: 1 }}>
-            {/* Header with title and timestamp */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                mb: notification.message ? 1 : 0,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontWeight: notification.isRead ? 500 : 600,
-                  fontSize: '14px',
-                  color: 'text.primary',
-                }}
-              >
-                {notification.title}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {!notification.isRead && (
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: COLORS.gradientPrimary,
-                    }}
-                  />
-                )}
-                <Typography
-                  sx={{
-                    fontSize: '12px',
-                    color: 'text.secondary',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {formatDateTime(notification.createdAt)}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Message */}
-            {notification.message && (
-              <Typography
-                sx={{
-                  fontSize: '14px',
-                  color: 'text.secondary',
-                }}
-              >
-                {notification.message}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-      </Card>
-    </Box>
-  )
+    </Stack>
+  </Card>
 }
 
-// Date Group Component
-const DateGroup = ({ date, notifications, isLast, onMarkAsRead }) => {
-  return (
-    <Box sx={{ mb: 4 }}>
-      {/* Date Badge with line */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <Box
-          sx={{
-            background: COLORS.gradientPrimary,
-            borderRadius: '16px',
-            px: 1.5,
-            py: 0.5,
-          }}
-        >
-          <Typography
-            sx={{
-              fontWeight: 500,
-              fontSize: '12px',
-              color: '#fff',
-            }}
-          >
-            {date}
-          </Typography>
-        </Box>
-        <Box
-          sx={{
-            flex: 1,
-            height: '1px',
-            backgroundColor: 'divider',
-          }}
-        />
-      </Box>
+export default function Activity() {
+  const [activities, setActivities] = useState([])
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [category, setCategory] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState('')
+  const types = useMemo(() => category === 'all' ? undefined : categories[category], [category])
+  const load = useCallback(async (offset = 0) => {
+    offset ? setLoadingMore(true) : setLoading(true)
+    setError('')
+    try {
+      const response = await fetchActivitiesAPI({ limit: PAGE_SIZE, offset, types })
+      const next = Array.isArray(response.activities) ? response.activities : []
+      setActivities((current) => offset ? [...current, ...next] : next)
+      setTotal(response.total || 0)
+      setHasMore(Boolean(response.hasMore))
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Unable to load activity history. Please try again.')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [types])
+  useEffect(() => { load() }, [load])
+  const groups = useMemo(() => {
+    const result = new Map()
+    activities.forEach((activity) => {
+      const date = new Date(activity.createdAt).toISOString().slice(0, 10)
+      result.set(date, [...(result.get(date) || []), activity])
+    })
+    return [...result.entries()]
+  }, [activities])
 
-      {/* Notifications with timeline */}
-      <Box sx={{ position: 'relative', ml: 2.25 }}>
-        {/* Vertical timeline line */}
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: isLast ? 48 : 0,
-            width: 2,
-            background: COLORS.gradientPrimary,
-          }}
-        />
-
-        {/* Notification cards */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {notifications.map((notification) => (
-            <NotificationCard key={notification._id} notification={notification} onMarkAsRead={onMarkAsRead} />
-          ))}
-        </Box>
-      </Box>
-    </Box>
-  )
+  return <Layout><Container maxWidth="md"><Box sx={{ minHeight: '100vh', p: { xs: 2, md: 4 } }}>
+    <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}><Box><Typography variant="h4" fontWeight={800}>{'Ho\u1ea1t \u0111\u1ed9ng'}</Typography><Typography color="text.secondary" sx={{ mt: 0.5 }}>{'L\u1ecbch s\u1eed c\u00e1c thay \u0111\u1ed5i quan tr\u1ecdng trong t\u00e0i kho\u1ea3n c\u1ee7a b\u1ea1n.'}</Typography></Box><Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => load()} disabled={loading}>{'L\u00e0m m\u1edbi'}</Button></Stack>
+    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>{[['all', 'T\u1ea5t c\u1ea3'], ['bill', 'H\u00f3a \u0111\u01a1n'], ['payment', 'Thanh to\u00e1n'], ['group', 'Nh\u00f3m']].map(([value, label]) => <Chip key={value} label={label} onClick={() => setCategory(value)} color={category === value ? 'primary' : 'default'} variant={category === value ? 'filled' : 'outlined'} />)}</Stack>
+    {error && <Alert severity="error" action={<Button color="inherit" size="small" onClick={() => load()}>{'Th\u1eed l\u1ea1i'}</Button>} sx={{ mb: 3 }}>{error}</Alert>}
+    {loading ? <Box sx={{ display: 'grid', minHeight: 240, placeItems: 'center' }}><CircularProgress /></Box> : groups.length ? <Stack spacing={3}>{groups.map(([date, entries]) => <Box key={date}><Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}><Typography color="text.secondary" fontSize={13} fontWeight={700}>{new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${date}T00:00:00`))}</Typography><Divider sx={{ flex: 1 }} /></Stack><Stack spacing={1.25}>{entries.map((activity) => <ActivityCard key={activity._id} activity={activity} />)}</Stack></Box>)}{hasMore && <Box textAlign="center"><Button onClick={() => load(activities.length)} disabled={loadingMore}>{loadingMore ? <CircularProgress size={20} /> : `T\u1ea3i th\u00eam (${Math.max(0, total - activities.length)})`}</Button></Box>}</Stack> : <Box sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 3, p: 6, textAlign: 'center' }}><TimelineIcon color="disabled" sx={{ fontSize: 40 }} /><Typography fontWeight={700} sx={{ mt: 1 }}>{'Ch\u01b0a c\u00f3 ho\u1ea1t \u0111\u1ed9ng'}</Typography><Typography color="text.secondary">{'C\u00e1c thay \u0111\u1ed5i quan tr\u1ecdng s\u1ebd xu\u1ea5t hi\u1ec7n \u1edf \u0111\u00e2y.'}</Typography></Box>}
+  </Box></Container></Layout>
 }
-
-// Pagination config
-const ITEMS_PER_PAGE = 10
-
-const Activity = () => {
-  const dispatch = useDispatch()
-  const currentUser = useSelector(selectCurrentUser)
-
-  // Redux state
-  const notifications = useSelector(selectCurrentNotifications)
-  const total = useSelector(selectNotificationTotal)
-  const unreadCount = useSelector(selectUnreadCount)
-  const hasMore = useSelector(selectHasMore)
-  const loading = useSelector(selectNotificationLoading)
-  const loadingMore = useSelector(selectNotificationLoadingMore)
-
-  // Filter dialog state
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false)
-  const [selectedNotificationTypes, setSelectedNotificationTypes] = useState(allNotificationTypes)
-  const [tempSelectedTypes, setTempSelectedTypes] = useState(allNotificationTypes)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [tempDateFrom, setTempDateFrom] = useState('')
-  const [tempDateTo, setTempDateTo] = useState('')
-  const [unreadOnly, setUnreadOnly] = useState(false)
-  const [tempUnreadOnly, setTempUnreadOnly] = useState(false)
-
-  // Pagination state
-  const [offset, setOffset] = useState(0)
-
-  // Fetch notifications from API
-  const fetchNotifications = useCallback(
-    (isLoadMore = false) => {
-      if (!currentUser?._id) return
-
-      const newOffset = isLoadMore ? offset + ITEMS_PER_PAGE : 0
-      dispatch(fetchNotificationsAPI({ limit: ITEMS_PER_PAGE, offset: newOffset, unreadOnly }))
-      if (isLoadMore) {
-        setOffset(newOffset)
-      } else {
-        setOffset(0)
-      }
-    },
-    [currentUser?._id, dispatch, offset, unreadOnly]
-  )
-
-  // Initial fetch and refetch when filters change
-  useEffect(() => {
-    fetchNotifications(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id, unreadOnly])
-
-  // Socket.io listeners for real-time updates
-  useEffect(() => {
-    if (!currentUser?._id) return
-
-    // Join notification room
-    socketIoInstance.emit('FE_JOIN_NOTIFICATION_ROOM', currentUser._id)
-
-    // Listen for new notifications
-    const handleNewNotification = (notification) => {
-      // Only add if notification is for current user
-      if (notification?.recipientId === currentUser._id) {
-        dispatch(addNotification(notification))
-
-        // Show toast notification
-        toast.info(notification.title || 'Bạn có thông báo mới', { theme: 'colored' })
-      }
-    }
-
-    // Listen for notification read (from other devices)
-    const handleNotificationRead = ({ notificationId, userId }) => {
-      if (userId === currentUser._id) {
-        dispatch(setNotificationRead({ notificationId }))
-      }
-    }
-
-    // Listen for all notifications read (from other devices)
-    const handleAllNotificationsRead = ({ userId }) => {
-      if (userId === currentUser._id) {
-        dispatch(setAllNotificationsRead())
-      }
-    }
-
-    // Listen for unread count update
-    const handleUnreadCountUpdate = ({ userId, count }) => {
-      if (userId === currentUser._id) {
-        dispatch(setUnreadCount(count))
-      }
-    }
-
-    socketIoInstance.on('BE_NEW_NOTIFICATION', handleNewNotification)
-    socketIoInstance.on('BE_NOTIFICATION_READ', handleNotificationRead)
-    socketIoInstance.on('BE_ALL_NOTIFICATIONS_READ', handleAllNotificationsRead)
-    socketIoInstance.on('BE_UNREAD_COUNT_UPDATE', handleUnreadCountUpdate)
-
-    // Cleanup on unmount
-    return () => {
-      socketIoInstance.emit('FE_LEAVE_NOTIFICATION_ROOM', currentUser._id)
-      socketIoInstance.off('BE_NEW_NOTIFICATION', handleNewNotification)
-      socketIoInstance.off('BE_NOTIFICATION_READ', handleNotificationRead)
-      socketIoInstance.off('BE_ALL_NOTIFICATIONS_READ', handleAllNotificationsRead)
-      socketIoInstance.off('BE_UNREAD_COUNT_UPDATE', handleUnreadCountUpdate)
-    }
-  }, [currentUser?._id, dispatch])
-
-  // Group notifications by date
-  const groupedNotifications = groupNotificationsByDate(notifications)
-
-  // Handle mark notification as read
-  const handleMarkAsRead = async (notificationId) => {
-    dispatch(markNotificationReadAPI(notificationId))
-    // Emit socket event to sync across devices
-    socketIoInstance.emit('FE_MARK_NOTIFICATION_READ', { notificationId, userId: currentUser._id })
-  }
-
-  // Handle mark all notifications as read
-  const handleMarkAllAsRead = async () => {
-    dispatch(markAllNotificationsReadAPI())
-    // Emit socket event to sync across devices
-    socketIoInstance.emit('FE_MARK_ALL_NOTIFICATIONS_READ', currentUser._id)
-  }
-
-  // Handle filter dialog open
-  const handleFilterClick = () => {
-    setTempSelectedTypes(selectedNotificationTypes)
-    setTempDateFrom(dateFrom)
-    setTempDateTo(dateTo)
-    setTempUnreadOnly(unreadOnly)
-    setFilterDialogOpen(true)
-  }
-
-  // Handle filter dialog close
-  const handleFilterClose = () => {
-    setFilterDialogOpen(false)
-  }
-
-  // Handle notification type checkbox change
-  const handleNotificationTypeChange = (typeValue) => {
-    setTempSelectedTypes((prev) =>
-      prev.includes(typeValue) ? prev.filter((t) => t !== typeValue) : [...prev, typeValue]
-    )
-  }
-
-  // Handle deselect all notification types
-  const handleDeselectAll = () => {
-    setTempSelectedTypes([])
-  }
-
-  // Handle select all notification types
-  const handleSelectAll = () => {
-    setTempSelectedTypes(allNotificationTypes)
-  }
-
-  // Handle apply filters
-  const handleApplyFilters = () => {
-    setSelectedNotificationTypes(tempSelectedTypes.length > 0 ? tempSelectedTypes : allNotificationTypes)
-    setDateFrom(tempDateFrom)
-    setDateTo(tempDateTo)
-    setUnreadOnly(tempUnreadOnly)
-    setOffset(0) // Reset pagination on filter change
-    setFilterDialogOpen(false)
-  }
-
-  // Handle clear filters
-  const handleClearFilters = () => {
-    setTempSelectedTypes(allNotificationTypes)
-    setTempDateFrom('')
-    setTempDateTo('')
-    setTempUnreadOnly(false)
-  }
-
-  // Handle load more
-  const handleLoadMore = () => {
-    fetchNotifications(true)
-  }
-
-  // Check if any filters are active
-  const hasActiveFilters =
-    selectedNotificationTypes.length !== allNotificationTypes.length || dateFrom !== '' || dateTo !== '' || unreadOnly
-
-  return (
-    <Layout>
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            p: { xs: 3, md: 4 },
-            minHeight: '100vh',
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              mb: 3,
-            }}
-          >
-            <Box>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontFamily: "'Nunito Sans', sans-serif",
-                  fontWeight: 700,
-                  fontSize: { xs: '24px', md: '30px' },
-                  color: 'text.primary',
-                  mb: 1,
-                }}
-              >
-                Thông báo
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: '16px',
-                  color: 'text.secondary',
-                }}
-              >
-                Theo dõi tất cả thông báo và cập nhật
-              </Typography>
-            </Box>
-
-            {/* Filter Button */}
-            <Button
-              variant="outlined"
-              startIcon={<FilterListIcon />}
-              onClick={handleFilterClick}
-              sx={{
-                borderRadius: '16px',
-                borderColor: hasActiveFilters ? 'primary.main' : 'divider',
-                color: hasActiveFilters ? 'primary.main' : 'text.primary',
-                textTransform: 'none',
-                fontWeight: 500,
-                fontSize: '14px',
-                px: 2,
-                py: 1,
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  backgroundColor: 'transparent',
-                },
-              }}
-            >
-              Lọc thông báo
-              {hasActiveFilters && (
-                <Box
-                  component="span"
-                  sx={{
-                    ml: 1,
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: COLORS.gradientPrimary,
-                  }}
-                />
-              )}
-            </Button>
-          </Box>
-
-          {/* Filter Dialog */}
-          <Dialog
-            open={filterDialogOpen}
-            onClose={handleFilterClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-              paper: {
-                sx: {
-                  borderRadius: '24px',
-                  p: 0,
-                  maxWidth: 480,
-                },
-              },
-            }}
-          >
-            {/* Dialog Header */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                p: 3,
-                pb: 2,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '20px',
-                  color: 'text.primary',
-                }}
-              >
-                Lọc thông báo
-              </Typography>
-              <IconButton onClick={handleFilterClose} size="small">
-                <CloseIcon />
-              </IconButton>
-            </Box>
-
-            <DialogContent sx={{ px: 3, py: 0 }}>
-              {/* Date Range Section */}
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    color: 'text.primary',
-                    mb: 1.5,
-                  }}
-                >
-                  Khoảng thời gian
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      sx={{
-                        fontSize: '12px',
-                        color: 'text.secondary',
-                        mb: 0.5,
-                      }}
-                    >
-                      Từ ngày
-                    </Typography>
-                    <Box
-                      component="input"
-                      type="date"
-                      value={tempDateFrom}
-                      onChange={(e) => setTempDateFrom(e.target.value)}
-                      sx={{
-                        width: '100%',
-                        px: 1.5,
-                        py: 1,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: '12px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        outline: 'none',
-                        '&:focus': {
-                          borderColor: 'primary.main',
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      sx={{
-                        fontSize: '12px',
-                        color: 'text.secondary',
-                        mb: 0.5,
-                      }}
-                    >
-                      Đến ngày
-                    </Typography>
-                    <Box
-                      component="input"
-                      type="date"
-                      value={tempDateTo}
-                      onChange={(e) => setTempDateTo(e.target.value)}
-                      sx={{
-                        width: '100%',
-                        px: 1.5,
-                        py: 1,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: '12px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        outline: 'none',
-                        '&:focus': {
-                          borderColor: 'primary.main',
-                        },
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-
-              {/* Unread Only Filter */}
-              <Box sx={{ mb: 3 }}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={tempUnreadOnly}
-                      onChange={(e) => setTempUnreadOnly(e.target.checked)}
-                      size="small"
-                      sx={{
-                        color: 'text.secondary',
-                        '&.Mui-checked': {
-                          color: 'primary.main',
-                        },
-                      }}
-                    />
-                  }
-                  label="Chỉ hiển thị chưa đọc"
-                  sx={{
-                    m: 0,
-                    '& .MuiFormControlLabel-label': {
-                      fontSize: '14px',
-                      color: 'text.primary',
-                    },
-                  }}
-                />
-              </Box>
-
-              {/* Notification Types Section */}
-              <Box sx={{ mb: 3 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 1.5,
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      color: 'text.primary',
-                    }}
-                  >
-                    Loại thông báo
-                  </Typography>
-                  <Button
-                    onClick={
-                      tempSelectedTypes.length === allNotificationTypes.length ? handleDeselectAll : handleSelectAll
-                    }
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: '12px',
-                      color: 'primary.main',
-                      fontWeight: 500,
-                      minWidth: 'auto',
-                      p: 0,
-                      '&:hover': {
-                        background: 'transparent',
-                      },
-                    }}
-                  >
-                    {tempSelectedTypes.length === allNotificationTypes.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                  </Button>
-                </Box>
-
-                {/* Notification Type Checkboxes Grid */}
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: 0.5,
-                  }}
-                >
-                  {notificationTypeCheckboxOptions.map((option) => (
-                    <FormControlLabel
-                      key={option.value}
-                      control={
-                        <Checkbox
-                          checked={tempSelectedTypes.includes(option.value)}
-                          onChange={() => handleNotificationTypeChange(option.value)}
-                          size="small"
-                          sx={{
-                            color: 'text.secondary',
-                            '&.Mui-checked': {
-                              color: 'primary.main',
-                            },
-                          }}
-                        />
-                      }
-                      label={option.label}
-                      sx={{
-                        m: 0,
-                        '& .MuiFormControlLabel-label': {
-                          fontSize: '13px',
-                          color: 'text.primary',
-                        },
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            </DialogContent>
-
-            {/* Dialog Footer */}
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                p: 3,
-                pt: 2,
-              }}
-            >
-              <Button
-                onClick={handleClearFilters}
-                variant="outlined"
-                fullWidth
-                sx={{
-                  borderRadius: '16px',
-                  py: 1.5,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  borderColor: 'divider',
-                  color: 'text.primary',
-                  '&:hover': {
-                    borderColor: 'text.secondary',
-                    backgroundColor: 'transparent',
-                  },
-                }}
-              >
-                Xóa bộ lọc
-              </Button>
-              <Button
-                onClick={handleApplyFilters}
-                variant="contained"
-                fullWidth
-                sx={{
-                  borderRadius: '16px',
-                  py: 1.5,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  background: COLORS.gradientPrimary,
-                  color: '#fff',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    background: COLORS.gradientPrimary,
-                    opacity: 0.9,
-                    boxShadow: 'none',
-                  },
-                }}
-              >
-                Áp dụng
-              </Button>
-            </Box>
-          </Dialog>
-
-          {/* Notification List */}
-          <Box sx={{ maxWidth: 960, mx: 'auto' }}>
-            {/* Mark All as Read Button */}
-            {unreadCount > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <Button
-                  onClick={handleMarkAllAsRead}
-                  startIcon={<DoneAllIcon />}
-                  sx={{
-                    textTransform: 'none',
-                    fontSize: '14px',
-                    color: 'primary.main',
-                    fontWeight: 500,
-                    '&:hover': {
-                      background: 'rgba(206, 147, 216, 0.1)',
-                    },
-                  }}
-                >
-                  Đánh dấu tất cả đã đọc ({unreadCount})
-                </Button>
-              </Box>
-            )}
-
-            {loading ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  py: 8,
-                }}
-              >
-                <CircularProgress sx={{ color: '#CE93D8' }} />
-              </Box>
-            ) : groupedNotifications.length > 0 ? (
-              <>
-                {groupedNotifications.map((group, index) => (
-                  <DateGroup
-                    key={group.date}
-                    date={group.date}
-                    notifications={group.notifications}
-                    isLast={index === groupedNotifications.length - 1 && !hasMore}
-                    onMarkAsRead={handleMarkAsRead}
-                  />
-                ))}
-
-                {/* Load More Button */}
-                {hasMore && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 2 }}>
-                    <Button
-                      onClick={handleLoadMore}
-                      variant="outlined"
-                      disabled={loadingMore}
-                      sx={{
-                        borderRadius: '16px',
-                        px: 4,
-                        py: 1.5,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        borderColor: 'divider',
-                        color: 'text.primary',
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          backgroundColor: 'transparent',
-                        },
-                      }}
-                    >
-                      {loadingMore ? <CircularProgress size={20} sx={{ color: '#CE93D8', mr: 1 }} /> : null}
-                      Tải thêm ({total - notifications.length} thông báo còn lại)
-                    </Button>
-                  </Box>
-                )}
-              </>
-            ) : (
-              <Box
-                sx={{
-                  textAlign: 'center',
-                  py: 8,
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '16px',
-                    color: 'text.secondary',
-                  }}
-                >
-                  Không có thông báo nào
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </Container>
-    </Layout>
-  )
-}
-
-export default Activity

@@ -8,7 +8,7 @@ import { sendOptOutEmail } from '~/utils/emailService.js'
 
 const createNew = async (req, res, next) => {
   try {
-    const createdBill = await billService.createNew(req.body)
+    const createdBill = await billService.createNew({ ...req.body, creatorId: req.jwtDecoded._id })
     res.status(StatusCodes.CREATED).json(createdBill)
   } catch (error) {
     next(error)

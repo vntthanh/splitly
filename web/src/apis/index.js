@@ -7,6 +7,12 @@ export const fetchDashboardDataAPI = async (userId) => {
   const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/dashboard/${userId}`)
   return response.data
 }
+export const fetchActivitiesAPI = async ({ limit = 20, offset = 0, types } = {}) => {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (Array.isArray(types) && types.length > 0) params.set('types', types.join(','))
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/activities?${params.toString()}`)
+  return response.data
+}
 
 // ============================================
 // REPORT APIs

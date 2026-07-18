@@ -245,13 +245,15 @@ const confirmPayment = async (req, res, next) => {
 
       // Log activity
       try {
+        const activityBillId = priorityBill || updatedBills[0]?.billId || null
         await activityModel.createNew({
           userId: recipientId,
           activityType: 'payment_confirmed',
-          resourceType: 'bill',
-          resourceId: paymentId,
+          resourceType: activityBillId ? 'bill' : 'user',
+          resourceId: activityBillId || payerId,
           details: {
             paymentId,
+            billId: activityBillId,
             payerId,
             amount,
             updatedBills,
@@ -299,10 +301,11 @@ const confirmPayment = async (req, res, next) => {
         await activityModel.createNew({
           userId: recipientId,
           activityType: 'payment_rejected',
-          resourceType: 'bill',
-          resourceId: paymentId,
+          resourceType: priorityBill ? 'bill' : 'user',
+          resourceId: priorityBill || payerId,
           details: {
             paymentId,
+            billId: priorityBill || null,
             payerId,
             amount,
             description: `Từ chối xác nhận nhận được ${amount.toLocaleString('vi-VN')}₫ từ người dùng`
