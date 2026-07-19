@@ -104,6 +104,11 @@ export const BillDetail = Loadable(
   'BillDetail'
 )
 
+export const BillEdit = Loadable(
+  lazy(() => import('../pages/Bills/BillEdit')),
+  'Đang tải trang chỉnh sửa hóa đơn...',
+  'BillEdit'
+)
 export const OptOut = Loadable(
   lazy(() => import('../pages/Bills/OptOut')),
   'Đang xử lý yêu cầu...',

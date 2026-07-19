@@ -13,7 +13,9 @@ Router.route('/').post(authMiddleware.isAuthorized, billValidation.createNew, bi
 
 Router.route('/user/:userId').get(authMiddleware.isAuthorized, billController.getBillsByUserId)
 
-Router.route('/:billId').get(authMiddleware.isAuthorized, billController.getBillById)
+Router.route('/:billId')
+.get(authMiddleware.isAuthorized, billController.getBillById)
+.put(authMiddleware.isAuthorized, billValidation.createNew, billController.updateBill)
 
 Router.route('/mutual/:userId/:creditorId').get(authMiddleware.isAuthorized, billController.getMutualBills)
 

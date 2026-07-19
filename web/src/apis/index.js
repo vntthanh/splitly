@@ -190,6 +190,13 @@ export const fetchBillByIdAPI = async (billId) => {
   return response.data
 }
 
+// Update an existing bill
+export const updateBillAPI = async (billId, billData) => {
+  const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/bills/${billId}`, billData)
+  toast.success('Hóa đơn đã được cập nhật thành công!', { theme: 'colored' })
+  return response.data
+}
+
 // Get mutual bills between two users
 export const fetchMutualBillsAPI = async (userId, creditorId) => {
   const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/bills/mutual/${userId}/${creditorId}`)

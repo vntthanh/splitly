@@ -40,23 +40,23 @@ const createNew = async (reqBody, options = {}) => {
         await userModel.update(existingUser._id.toString(), updateData)
         const updatedUser = await userModel.findOneById(existingUser._id.toString())
 
-        // // Log account upgrade activity
-        // try {
-        //   await activityModel.logUserActivity(
-        //     activityModel.ACTIVITY_TYPES.USER_UPDATED,
-        //     existingUser._id.toString(),
-        //     existingUser._id.toString(),
-        //     {
-        //       userEmail: updatedUser.email,
-        //       userName: updatedUser.name,
-        //       ipAddress: options.ipAddress,
-        //       userAgent: options.userAgent,
-        //       description: `Guest account upgraded to member: ${updatedUser.email}`,
-        //     }
-        //   )
-        // } catch (activityError) {
-        //   console.warn('Failed to log account upgrade activity:', activityError.message)
-        // }
+        // Log account upgrade activity
+        try {
+          await activityModel.logBillActivity(
+            activityModel.ACTIVITY_TYPES.USER_UPDATED,
+            existingUser._id.toString(),
+            existingUser._id.toString(),
+            {
+              userEmail: updatedUser.email,
+              userName: updatedUser.name,
+              ipAddress: options.ipAddress,
+              userAgent: options.userAgent,
+              description: `Guest account upgraded to member: ${updatedUser.email}`,
+            }
+          )
+        } catch (activityError) {
+          console.warn('Failed to log account upgrade activity:', activityError.message)
+        }
 
         // Send verification email with beautiful template
         const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${encodeURIComponent(

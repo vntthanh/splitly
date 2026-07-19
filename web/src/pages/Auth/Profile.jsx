@@ -15,6 +15,7 @@ function Profile() {
   const hoverGradient = 'linear-gradient(135deg, #EF9A9A 0%, #CE93D8 100%)'
   const dispatch = useDispatch()
   const userFromStore = useSelector(selectCurrentUser)
+  console.log(userFromStore);
   const [currentUser, setCurrentUser] = useState(userFromStore)
   const [isEditing, setIsEditing] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)

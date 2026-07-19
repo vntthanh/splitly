@@ -438,6 +438,115 @@ const update = async (billId, updateData, updatedBy) => {
   }
 }
 
+const updateBill = async (billId, reqBody) => {
+  try {
+    const originalBill = await billModel.findOneById(billId)
+    if (!originalBill) {
+      throw new Error('Bill not found')
+    }
+
+    if (reqBody.payerId && reqBody.payerId.toString() !== originalBill.payerId.toString()) {
+      throw new Error('Changing the payer (người ứng tiền) is not allowed during update.')
+    }
+
+    const currentPayerId = originalBill.payerId.toString()
+
+    let paymentStatus = []
+
+    const getPaidAmount = (userId, amountOwed, isPayer) => {
+      if (isPayer) return amountOwed
+
+      const existing = originalBill.paymentStatus?.find((ps) => ps.userId.toString() === userId.toString())
+      return existing ? existing.amountPaid : 0
+    }
+
+    if (reqBody.splittingMethod === 'equal') {
+      const amountPerPerson = reqBody.totalAmount / reqBody.participants.length
+      // const remainder = reqBody.totalAmount - (amountPerPerson * reqBody.participants.length)
+
+      paymentStatus = reqBody.participants.map((userId, index) => {
+        // const finalAmount = index === reqBody.participants.length - 1
+        //   ? amountPerPerson + remainder
+        //   : amountPerPerson;
+        const isPayer = userId.toString() === currentPayerId
+        return {
+          userId: userId,
+          amountOwed: amountPerPerson,
+          amountPaid: isPayer ? amountPerPerson : 0,
+          paidDate:
+            originalBill.paymentStatus?.find((ps) => ps.userId.toString() === userId.toString())?.paidDate || null,
+        }
+      })
+    } else if (reqBody.splittingMethod === 'item-based') {
+      const sumOfItemAmounts = reqBody.items.reduce((sum, item) => sum + item.amount, 0)
+      const adjustmentRatio = reqBody.totalAmount / sumOfItemAmounts
+
+      const userAmounts = {}
+
+      reqBody.participants.forEach((pId) => (userAmounts[pId.toString()] = 0))
+
+      reqBody.items.forEach((item) => {
+        if (item.allocatedTo.length > 0) {
+          const adjustedItemAmount = item.amount * adjustmentRatio
+          const amountPerPerson = adjustedItemAmount / item.allocatedTo.length
+
+          item.allocatedTo.forEach((userId) => {
+            const userKey = userId.toString() // Use string key for object
+            userAmounts[userKey] = (userAmounts[userKey] || 0) + amountPerPerson
+          })
+        }
+      })
+
+      paymentStatus = Object.entries(userAmounts).map(([userIdStr, amount]) => {
+        // Use .equals() for proper ObjectId comparison (convert key back to ObjectId for comparison)
+        const isPayer = reqBody.payerId.toString() === userIdStr
+        return {
+          userId: userIdStr,
+          amountOwed: Math.round(amount),
+          amountPaid: isPayer ? Math.round(amount) : 0,
+          paidDate: originalBill.paymentStatus?.find((ps) => ps.userId.toString() === userIdStr)?.paidDate || null,
+        }
+      })
+    } else if (reqBody.splittingMethod === 'people-based') {
+      paymentStatus = reqBody.paymentStatus.map((ps) => {
+        const isPayer = ps.userId.toString() === currentPayerId
+        return {
+          userId: ps.userId,
+          amountOwed: ps.amountOwed,
+          amountPaid: getPaidAmount(ps.userId, ps.amountOwed, isPayer),
+          paidDate:
+            originalBill.paymentStatus?.find((s) => s.userId.toString() === ps.userId.toString())?.paidDate || null,
+        }
+      })
+    }
+    const updateData = {
+      ...reqBody,
+      payerId: originalBill.payerId,
+      paymentStatus,
+      updatedAt: Date.now(),
+    }
+
+    const result = await billModel.update(billId, updateData)
+
+    try {
+      await activityModel.logBillActivity(
+        activityModel.ACTIVITY_TYPES.BILL_UPDATED,
+        currentPayerId,
+        billId._id.toString(),
+        {
+          description: `Cập nhật hóa đơn ${result.billName}`,
+        }
+      )
+    } catch (activityError) {
+      console.warn('Failed to log bill upgrade activity:', activityError.message)
+    }
+
+    return await billModel.findOneById(billId)
+  } catch (error) {
+    throw error
+  }
+}
+
 /**
  * Mark bill as paid for a user (full or partial payment)
  * @param {string} billId - Bill ID
@@ -1015,12 +1124,11 @@ export const billService = {
   findOneById,
   getBillById,
   update,
+  updateBill,
   markAsPaid,
   optOutUser,
   deleteOneById,
   sendReminder,
-  // searchBillsByUserWithPagination,
-  // filterBillsByUser,
   getMutualBills,
   scanBill,
   getBillsWithConditions,

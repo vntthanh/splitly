@@ -4,6 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { useSelector } from 'react-redux'
 import { fetchBillByIdAPI } from '~/apis'
+import { getCategoryLabel } from '~/utils/formatters'
 import colors from 'tailwindcss/colors'
 import {
   Box,
@@ -16,7 +17,6 @@ import {
   IconButton,
   Divider,
   CircularProgress,
-  Checkbox,
   Button,
 } from '@mui/material'
 import {
@@ -30,9 +30,10 @@ import {
   Description as DescriptionIcon,
   Send as SendIcon,
   NotificationsActive as NotificationsActiveIcon,
+  Create as Edit,
 } from '@mui/icons-material'
 import { getInitials } from '~/utils/formatters'
-import { useColorScheme } from '@mui/material/styles'
+// import { useColorScheme } from '@mui/material/styles'
 import ConfirmPaymentDialog from '~/pages/Debt/ConfirmPaymentDialog'
 import PaymentDialog from '~/pages/Debt/PaymentDialog'
 import RemindDialog from '~/pages/Debt/RemindDialog'
@@ -123,7 +124,11 @@ const BillDetail = () => {
   }
 
   const handleBack = () => {
-    navigate(-1)
+    navigate(`/history`)
+  }
+
+  const handleEditBill = () => {
+    navigate(`/bills/${billId}/edit`)
   }
 
   const handleConfirmPayment = (participant) => {
@@ -160,14 +165,12 @@ const BillDetail = () => {
     setPaymentDialogOpen(true)
   }
 
-  // Helper function to determine if current user is the bill owner
   const isBillOwner = () => {
-    return currentUser?._id === billData?.payer?._id
+    return currentUser?._id === billData?.payerId
   }
 
-  // Helper function to get current user's participant data
-  const getCurrentUserParticipant = () => {
-    return billData?.participants?.find(p => p._id === currentUser?._id)
+  const isBillPayer = () => {
+    return currentUser?._id === billData?.payerId
   }
 
   if (loading) {
@@ -204,13 +207,13 @@ const BillDetail = () => {
     <Layout>
       <Box className="@container main-container">
         {/* Header */}
-        <Box
+            
+        <Box className = '@3xl: justify-between'
           sx={{
             mb: { xs: 4, md: 6 },
             display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
+            flexDirection: {  sm: 'row' },
             gap: { xs: 2, sm: 0 },
-            justifyContent: 'space-between',
             alignItems: { xs: 'stretch', sm: 'center' },
           }}
         >
@@ -226,21 +229,45 @@ const BillDetail = () => {
             >
               <ArrowBackIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
             </IconButton>
+
             <Box>
-              <Typography
-                variant="h4"
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">{billData.billName}</h1>
+              <Typography className="text-sm sm:text-base text-gray-500">Chi tiết hóa đơn</Typography>
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1.5,
+              alignItems: 'center',
+              justifyContent: { xs: 'space-between', sm: 'flex-end' },
+            }}
+          >
+            {isBillPayer() && (
+              <Button
+                variant="contained"
+                onClick={handleEditBill}
+                className='flex gap-2'
                 sx={{
-                  fontWeight: 700,
-                  color: '#0A0A0A',
-                  fontSize: { xs: '1.5rem', md: '2rem' },
+                  background: 'linear-gradient(135deg, #EF9A9A 0%, #CE93D8 100%)',
+                  color: '#ffff',
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  px: { xs: 2, sm: 3 },
+                  py: { xs: 1, sm: 1.5 },
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '1rem' },
+                  whiteSpace: 'nowrap',
+                  flex: {  sm: 'none' },
+                  '&:hover': {
+                    bgcolor: '#E57373',
+                  },
                 }}
               >
-                {billData.billName}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                Chi tiết hóa đơn
-              </Typography>
-            </Box>
+                <Edit />
+                Chỉnh sửa hóa đơn
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -261,14 +288,20 @@ const BillDetail = () => {
               color: '#1A1A1A',
             }}
           >
-            <CardContent sx={{ p: { xs: 2.5, sm: 3 }, color: 'white'}}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 3 }, color: 'white' }}>
               <Box className="flex items-center gap-2 mb-2">
                 <AttachMoneyIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' }, color: 'white' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' }, color: 'white' }}
+                >
                   Tổng tiền
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }, color: 'white' }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }, color: 'white' }}
+              >
                 {formatCurrency(billData.totalAmount)} đ
               </Typography>
             </CardContent>
@@ -318,7 +351,7 @@ const BillDetail = () => {
                   sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                   color="text.secondary"
                 >
-                  Quay lại
+                  Còn lại
                 </Typography>
               </Box>
               <Typography
@@ -359,7 +392,7 @@ const BillDetail = () => {
                       Người thanh toán
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 3 }, }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 3 } }}>
                     <Avatar
                       sx={{
                         width: { xs: 36, sm: 40 },
@@ -389,12 +422,12 @@ const BillDetail = () => {
                 <Divider sx={{ my: 3 }} />
 
                 {/* Date Created and Payment Deadline - Same Row */}
-                <Box 
-                  sx={{ 
+                <Box
+                  sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
                     gap: { xs: 3, sm: 4 },
-                    mb: 4
+                    mb: 4,
                   }}
                 >
                   {/* Date Created */}
@@ -427,7 +460,7 @@ const BillDetail = () => {
                       </Typography>
                     </Box>
                     <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
-                      {formatDate(billData.paymentDate)}
+                      {billData.paymentDeadline ? formatDate(billData.paymentDeadline) : ''}
                     </Typography>
                   </Box>
                 </Box>
@@ -435,12 +468,12 @@ const BillDetail = () => {
                 <Divider sx={{ my: 3 }} />
 
                 {/* Status and Category - Same Row */}
-                <Box 
-                  sx={{ 
+                <Box
+                  sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
                     gap: { xs: 3, sm: 4 },
-                    mb: 4
+                    mb: 4,
                   }}
                 >
                   {/* Status */}
@@ -480,7 +513,7 @@ const BillDetail = () => {
                       </Typography>
                     </Box>
                     <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
-                      {billData.category}
+                      {getCategoryLabel(billData.category)}
                     </Typography>
                   </Box>
                 </Box>
@@ -503,12 +536,12 @@ const BillDetail = () => {
                     <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.85rem', sm: '0.9rem' } }}>
                       {paidCount}/{billData.participants.length} người đã thanh toán
                     </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        fontWeight: 700, 
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 700,
                         fontSize: { xs: '0.85rem', sm: '0.9rem' },
-                        color: hoverGradient
+                        color: hoverGradient,
                       }}
                     >
                       {Math.round(progress)}%
@@ -520,7 +553,7 @@ const BillDetail = () => {
                     sx={{
                       height: { xs: 8, sm: 10 },
                       borderRadius: 5,
-                      bgcolor: hoverGradient
+                      bgcolor: hoverGradient,
                     }}
                   />
                 </Box>
@@ -542,7 +575,6 @@ const BillDetail = () => {
                       </Box>
                       <Typography
                         sx={{
-                          
                           color: 'text.secondary',
                           fontSize: { xs: '0.85rem', sm: '1rem' },
                           lineHeight: 1.6,
@@ -663,7 +695,7 @@ const BillDetail = () => {
                           </Typography>
                         </Box>
                       </Box>
-                      
+
                       {/* Payment Status or Action Button */}
                       {participant.paid ? (
                         // Show green badge if participant has paid

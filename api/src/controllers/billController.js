@@ -171,12 +171,23 @@ const verifyOptOutToken = async (req, res, next) => {
   }
 }
 
+const updateBill = async (req, res, next) => {
+  try {
+    const { billId } = req.params
+    const updatedBill = await billService.updateBill(billId, req.body)
+    res.status(StatusCodes.OK).json(updatedBill)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const billController = {
   createNew, 
   scan,
   getBillsByUserId,
   getBillById,
   getMutualBills,
+  updateBill,
   optOut,
   verifyOptOutToken,
 }

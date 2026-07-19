@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { fetchHistoryDataAPI, fetchHistorySearchingAPI, fetchHistoryFilterAPI } from '~/apis'
+import { fetchHistoryFilterAPI } from '~/apis'
+import { getCategoryLabel } from '~/utils/formatters'
 import {
   Box,
   TextField,
@@ -71,7 +72,7 @@ const History = () => {
     const fetchHistoryData = async () => {
       try {
         setLoading(true)
-        
+
         // Use unified filter API with all parameters
         const responseData = await fetchHistoryFilterAPI(
           currentUserId,
@@ -87,6 +88,7 @@ const History = () => {
         setHistoryData(responseData.bills || [])
         setTotalPage(responseData.pagination?.totalPages || 1)
         setTotalBills(responseData.pagination?.total || 0)
+        console.log(responseData.bills)
 
         setError(null)
       } catch (err) {
@@ -168,19 +170,14 @@ const History = () => {
 
   const getStatusBadge = (bill) => {
     const isOwner = bill.payer?._id === currentUserId || bill.payer?.id === currentUserId
-    
+
     if (isOwner) {
-      // If owner, check bill's isSettled status
       if (bill.settled) {
         return { label: 'Đã thanh toán', color: '#10B981', bgColor: '#D1FAE5' }
       }
       return { label: 'Chưa thanh toán', color: '#F59E0B', bgColor: '#FEF3C7' }
     } else {
-      // If participant, check their payment status
-      const currentUserPayment = bill.paymentStatus?.find(
-        (participant) => participant.userId === currentUserId
-      )
-      console.log(bill.paymentStatus)
+      const currentUserPayment = bill.paymentStatus?.find((participant) => participant.userId === currentUserId)
       if (currentUserPayment?.paidDate) {
         return { label: 'Đã thanh toán', color: '#10B981', bgColor: '#D1FAE5' }
       }
@@ -188,10 +185,6 @@ const History = () => {
     }
   }
 
-  const getCategoryLabel = (bill) => {
-    // Extract category from bill data, defaulting to "Ăn uống" if not available
-    return bill.category || 'Ăn uống'
-  }
 
   // No longer need client-side filtering since backend handles it
   const filteredHistoryData = historyData
@@ -251,10 +244,10 @@ const History = () => {
                     borderColor: '#E5E7EB',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#D1D5DB',
+                    borderColor: hoverGradient,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#574D98',
+                    borderColor: hoverGradient,
                   },
                 },
                 '& .MuiOutlinedInput-input': {
@@ -430,6 +423,7 @@ const History = () => {
                   fontWeight: 600,
                   borderRadius: '8px',
                   px: 3,
+                  color: '#ffff',
                   '&:hover': {
                     backgroundColor: '#463A7A',
                   },
@@ -501,7 +495,7 @@ const History = () => {
             )}
           </Box>
         ) : (
-          <Box className="grid @3xl:grid-cols-2 gap-4">
+          <Box className="grid @5xl:grid-cols-2 gap-4">
             {filteredHistoryData.map((bill) => {
               const statusBadge = getStatusBadge(bill)
               return (
@@ -523,7 +517,7 @@ const History = () => {
                   <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
                     <Box className="flex flex-col sm:flex-row justify-between gap-4">
                       {/* Left: Avatar */}
-                      <div className='flex gap-4'>
+                      <div className="flex gap-4">
                         <Box className="flex-shrink-0">
                           <Avatar
                             sx={{
@@ -579,7 +573,7 @@ const History = () => {
                                 color: '#6B7280',
                               }}
                             >
-                              •{getCategoryLabel(bill)}
+                              • {getCategoryLabel(bill.category)}
                             </Typography>
 
                             {/* Participants */}
@@ -655,7 +649,7 @@ const History = () => {
               // size="medium"
               // siblingCount={{ xs: 0, sm: 1 }}
               boundaryCount={2}
-              showFirstButton 
+              showFirstButton
               showLastButton
               sx={{
                 '& .MuiPaginationItem-root': {
