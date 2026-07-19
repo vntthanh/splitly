@@ -2,312 +2,187 @@
 
 ## 1. Document Purpose
 
-This document defines the product vision, target users, current-state scope, future-state scope, product boundaries, assumptions, and expected outcomes for Splitly.
+This document defines the proposed Splitly product, its target users, business problem, MVP boundary, assumptions, constraints, and future direction. The project starts from approved documentation and is planned as a new build. Existing repository content is reference or proof-of-concept material and does not establish that a feature is already available.
 
-The document intentionally separates the current manual-entry workflow from the future AI-assisted receipt-scanning workflow. OCR-related code in the repository is treated as an experimental foundation rather than a completed current-state capability.
-
----
+The broader business current state is the fragmented pre-Splitly process described in the proposal documents. For continuity with the original workflow materials, `Current_State_Workflow.md` uses **current state** as the manual-entry comparison baseline, while `Future_State_Workflow.md` describes the Gemini-assisted target. Neither label claims that the repository is an operating product.
 
 ## 2. Product Overview
 
-Splitly is a responsive expense-sharing web application that helps a group record a shared bill, determine how much each participant owes, and track whether each participant has paid.
+Splitly is a proposed responsive web application for Vietnamese users who share dining, travel, household, or social expenses. It will bring group setup, bill entry, calculation, payment assistance, payment confirmation, reminders, and history into one reviewable workflow.
 
-The current application supports manual bill creation with three splitting approaches:
+The MVP will offer two bill-input paths:
 
-1. **Equal split** — the bill is divided equally among selected participants.
-2. **By-person split** — the creator specifies the exact amount owed by each participant.
-3. **By-item split** — bill items are entered manually and assigned to one or more participants.
+1. **Manual entry:** the user enters bill information and selects equal, by-person, or by-item allocation.
+2. **Gemini-assisted receipt entry:** the user uploads a supported receipt image, Gemini 2.5 Flash prepares an editable draft, and the user reviews and corrects the draft before saving.
 
-After a bill is created, the application provides a bill-detail view with participant-level amounts, payment progress, payment status, and reminder actions.
-
-The future product state will add an AI-assisted receipt-scanning workflow that extracts bill data from a receipt image and pre-fills the existing bill-creation form. The user must review and confirm the extracted data before the bill is saved.
-
----
+Both paths use the same authoritative validation, splitting, payment-status, and audit rules. AI output never becomes a financial record without human confirmation.
 
 ## 3. Product Vision
 
-> **To make shared dining expenses quick, fair, and transparent by reducing manual bill transcription while preserving user control over how every item and payment is allocated.**
+> **To make shared expenses quick, fair, and transparent for Vietnamese groups by connecting receipt entry, explainable allocation, payment assistance, and follow-up in one user-controlled workflow.**
 
-Splitly is not positioned as a simple calculator that only divides a total by the number of participants. Its value comes from combining:
-
-- structured bill records;
-- flexible splitting methods;
-- item-to-person allocation;
-- payment tracking;
-- a future AI-assisted data-entry flow;
-- a mandatory human review step for financial accuracy.
-
----
+Splitly is not a wallet, a bank, or a guarantee that a transfer occurred. It helps users prepare and understand obligations, open VietQR-compatible payment instructions, record a payment declaration, and let the appropriate creditor confirm or reject it.
 
 ## 4. Mission Statement
 
-> **Splitly enables groups to transform a physical receipt into a clear, reviewable, and trackable shared expense record, reducing calculation effort, payment confusion, and awkward follow-up conversations.**
-
----
+> **Splitly helps groups transform a shared expense into a clear, verifiable record that shows who paid, who participated, how each amount was calculated, and what remains unsettled.**
 
 ## 5. Product Positioning
 
-### 5.1 Current Position
+### 5.1 Current Business Position
 
-The current version is a **manual shared-bill management tool**.
+Before Splitly, users combine receipts, calculators, spreadsheets or notes, group chat, personal QR images, and banking applications. One organizer manually reconciles calculations and payment status.
 
-Users enter bill details, select a payer and participants, choose a splitting method, save the bill, and track payment completion.
+### 5.2 Proposed MVP Position
 
-### 5.2 Future Position
+Splitly will be a Vietnamese-localized shared-expense application with reusable groups, three splitting methods, manual and Gemini-assisted bill entry, VietQR assistance, payment declaration and confirmation, reminders, and traceable history.
 
-The future version is an **AI-assisted shared-bill management tool**.
+### 5.3 Future Position
 
-Users scan or upload a receipt, AI extracts structured data, the system pre-fills the bill form, and the user verifies the result before continuing with participant assignment and splitting.
+After the MVP is validated, Splitly may add PDF receipt input, the TingTing chatbot, advanced reports, and AI payer recommendations. Cross-bill debt clearing is a current MVP commitment: it will calculate explainable net payment instructions without initiating or automatically verifying transfers.
 
-### 5.3 Positioning Statement
+### 5.4 Positioning Statement
 
-For groups of friends who frequently share meals, coffee, and entertainment expenses, Splitly is a bill-sharing application that provides flexible allocation and payment tracking. Unlike using a calculator, notes application, or group chat, Splitly keeps bill data, participant obligations, and payment status in one structured workflow. Its future AI-assisted scanning feature will reduce repetitive manual entry without removing user review and control.
-
----
+For Vietnamese social groups that need to settle shared expenses, Splitly is a structured bill-sharing application that connects allocation and payment follow-up. Unlike a calculator, spreadsheet, or chat thread, it keeps the confirmed bill, participant obligations, payment status, and history together. Unlike fully automated financial claims, it preserves human review of receipt data and payment confirmation.
 
 ## 6. Problem Statement
 
 ### 6.1 Primary Problem
 
-When a group shares a restaurant or café bill, one person commonly has to:
-
-- read the receipt;
-- manually enter or recalculate the bill;
-- identify which participant consumed each item;
-- divide shared items;
-- communicate each person's amount;
-- remember who has already paid;
-- remind unpaid participants.
-
-Even when the arithmetic is simple, the full process is repetitive, error-prone, and socially inconvenient.
+Shared bills become difficult when people consume different items, share selected dishes, or need tax, fees, tips, and discounts allocated fairly. The upfront payer often performs detailed transcription, calculation, communication, and payment tracking across several disconnected tools.
 
 ### 6.2 Current-State Pain Points
 
-| Pain point                                             | Consequence                                  |
-| ------------------------------------------------------ | -------------------------------------------- |
-| Manual transcription of bill information               | Slow bill creation and risk of input errors  |
-| Re-entering every item for item-based splitting        | High effort for long receipts                |
-| Switching between receipt, calculator, notes, and chat | Fragmented workflow                          |
-| Unclear payment status                                 | Repeated checking and follow-up              |
-| Manual reminders                                       | Social discomfort for the payer              |
-| Lack of a shared record                                | Disagreement about amounts or payment status |
+- Receipt data is manually retyped and is vulnerable to omission or error.
+- Equal splitting can be unfair; by-person and by-item approaches require additional calculation.
+- The calculation, chat discussion, bank instructions, and transaction evidence are fragmented.
+- Participants may not understand how their amount was derived or whether the payer recorded their transfer.
+- Reminders are repetitive and socially uncomfortable.
+- There is no shared, consistent history for the group.
 
-### 6.3 Future-State Opportunity
+### 6.3 Product Opportunity
 
-AI-assisted receipt scanning can reduce the most repetitive step: converting an unstructured receipt image into structured bill data.
-
-The AI feature does not replace the user. It produces a draft that must be reviewed because receipt images may be blurred, incomplete, folded, or formatted inconsistently.
-
----
+Splitly can reduce coordination effort without pretending that AI or a QR image proves financial truth. The product opportunity is to automate preparation and arithmetic while keeping people responsible for correcting receipt data, deciding allocation, transferring through their bank, and confirming payment.
 
 ## 7. Target Users
 
-### 7.1 Primary Persona — Social Dining Group
+### 7.1 Primary Persona — Social Dining Organizer
 
-**Persona name:** Minh — Group Bill Organizer  
-**Segment:** Friends or young professionals sharing meals, coffee, and entertainment expenses  
-**Typical age range:** 18–35  
-**Role in the workflow:** The person who pays upfront or volunteers to create the bill
+A student or young professional pays for a meal involving friends who consumed individual and shared items.
 
-#### Characteristics
+Goals:
 
-- Frequently joins meals, cafés, parties, movies, or entertainment activities with friends.
-- Usually uses a smartphone during or immediately after the activity.
-- Wants to complete the bill split quickly before the group disperses.
-- May need equal, by-person, or item-based splitting depending on the situation.
-- Wants a clear record of who owes what and who has paid.
+- create a correct breakdown quickly;
+- explain each person's amount;
+- share convenient payment instructions;
+- know who has paid without rereading chat and bank history;
+- remind unpaid participants consistently.
 
-#### Goals
+Frustrations:
 
-- Create a shared bill with minimal effort.
-- Allocate costs fairly.
-- Avoid manual recalculation.
-- Avoid sending repeated individual messages.
-- Confirm that the collected amount matches the bill.
-
-#### Frustrations
-
-- Long receipts with many items.
-- Shared items consumed by multiple people.
-- Participants leaving before the split is complete.
-- Needing to check bank transfers manually.
-- OCR errors that are difficult to notice.
-
-<!-- FIGMA SCREENSHOT REQUIRED: Primary persona card or user-profile slide from the Figma Make prototype, if available -->
+- long or unclear receipts;
+- tax, fee, discount, and rounding mismatches;
+- repeated member and item entry;
+- ambiguous transfer descriptions;
+- awkward manual reminders.
 
 ### 7.2 Secondary Persona — Travel Group Organizer
 
-A person coordinating food, transport, accommodation, and activity expenses during a group trip.
-
-Key additional needs include rapid entry of many bills and a clear history. Multi-currency and final trip-wide settlement are not included in the approved TV3 scope unless separately approved by the team.
+Coordinates several expenses across a trip and needs reusable membership, clear history, and separate settlement status for each bill.
 
 ### 7.3 Secondary Persona — Roommate Expense Coordinator
 
-A roommate recording shared groceries, household supplies, utilities, or occasional shared purchases.
+Tracks shared household purchases and utilities and needs transparent obligations and follow-up without operating a formal accounting system.
 
-Recurring billing is not part of the approved current/future workflow in this document.
+## 8. Product Goals and Measures
 
----
+| Goal | Intended outcome | MVP success signal |
+| --- | --- | --- |
+| Correct allocation | Users can split equally, by person, or by item with deterministic rounding. | Every accepted calculation test preserves `sum(shares) = confirmed total`. |
+| Faster entry | Manual entry is usable and Gemini can reduce transcription where receipt quality permits. | Users complete the selected UAT flow; OCR drafts are editable and never auto-saved. |
+| Transparent settlement | Authorized users can see obligations, payment claims, confirmations, and remaining amounts. | Priority payment and history scenarios pass UAT with no Critical/High defects. |
+| Safe assistance | Provider failure does not create false financial records or block manual entry. | Gemini, VietQR, and notification failure tests lead to a safe fallback. |
+| Ten-week delivery | Six members deliver a demonstrable, documented MVP within approved capacity. | MVP acceptance evidence, deployment, runbook, and post-MVP backlog are complete in Week 10. |
 
-## 8. Product Goals
-
-### 8.1 Current-State Goals
-
-- Provide a clear manual workflow for creating a bill.
-- Support equal, by-person, and by-item splitting.
-- Allow a bill item to be assigned to one or more participants.
-- Record one designated payer for each bill.
-- Display each participant's amount and payment status.
-- Preserve bill history for later review.
-
-### 8.2 Future-State Goals
-
-- Allow users to upload or capture a receipt.
-- Use AI to extract structured bill information.
-- Pre-fill the existing bill-creation form.
-- Make uncertain or missing data visible to the user.
-- Require user review before saving.
-- Preserve manual correction and manual-entry fallback.
-- Reduce bill-creation effort without weakening financial accuracy.
-
----
-
-## 9. Current-State Scope
-
-The current state is the manual bill-entry workflow that the team considers stable enough to demonstrate.
+## 9. MVP Scope
 
 ### 9.1 In Scope
 
-- User authentication and protected access.
-- Manual bill creation.
-- Bill name.
-- Category.
-- Notes.
-- Creation date.
-- Payment deadline.
-- One designated payer.
-- Participant selection.
-- Equal split.
-- By-person split.
-- By-item split.
-- Item quantity and amount entry.
-- Assignment of an item to one or more participants.
-- Calculation and validation of participant amounts.
-- Bill saving.
-- Bill history and detail.
-- Participant payment status.
-- Payment progress.
-- Payment reminders.
+- Registration, sign-in, verification, and basic profile management.
+- Group creation and member management.
+- Bill creation with one upfront payer and selected participants.
+- Three splitting methods: equal, by person, and by item.
+- Manual entry of bill fields and items.
+- Receipt-image upload for JPG/JPEG, PNG, and WebP up to 10 MB.
+- Gemini 2.5 Flash extraction into an editable draft with explicit user review and manual fallback.
+- Item assignment, shared-item calculation, and a documented rule for tax, fee, tip, discount, and rounding adjustments.
+- Bill validation, saved detail, history, and participant-level payment state.
+- Cross-bill debt clearing that shows explainable net obligations and payment instructions while retaining the source bill records.
+- VietQR-compatible payment instructions without fund custody or automatic bank verification.
+- Payment declaration followed by creditor confirmation or rejection.
+- Creditor-initiated reminders and essential in-app/real-time or email notifications.
+- Transactional outbox and background notification worker so committed bill/payment events can be delivered and retried asynchronously without changing financial state.
+- Responsive Vietnamese web experience.
+- Demonstration deployment using Vercel, Render, and MongoDB Atlas.
 
-### 9.2 Current-State Limitations
+### 9.2 Out of Scope for the MVP
 
-- Bill data must be typed manually.
-- Only one payer is stored for a bill.
-- OCR is not accepted as a completed current-state feature.
-- Explicit tax, service fee, tip, and discount fields are not confirmed in the current manual form.
-- The repository documentation contains broader feature claims than the verified current workflow.
-- AI payer selection, group-wide settlement optimization, recurring bills, and multi-currency are not part of the current state.
+- TingTing chatbot.
+- Advanced analytics and reports beyond essential MVP status summaries.
+- AI payer recommendation.
+- PDF receipt upload; maintain it in the future backlog.
+- Multiple upfront payers for one bill.
+- Automatic bank-transfer verification, payment gateways, a wallet, or custody of funds.
+- Native mobile applications, offline synchronization, multiple currencies, recurring bills, accounting exports, and production-scale SLA.
+- Separate message broker, microservices, or large-scale event platform; the MVP uses MongoDB as its outbox store and a worker from the same modular backend codebase.
 
----
+## 10. Scope Boundary
 
-## 10. Future-State Scope
-
-The approved future state focuses on AI receipt scanning and automatic bill-form population.
-
-### 10.1 In Scope
-
-- Capture or upload a receipt image.
-- Supported image validation.
-- Receipt preview.
-- AI/OCR processing state.
-- Extraction of available receipt fields:
-  - merchant or bill title;
-  - transaction date;
-  - total amount;
-  - item names;
-  - item quantities where available;
-  - item prices;
-  - category suggestion where feasible.
-- Pre-filling the manual bill-entry form.
-- User review and correction of extracted information.
-- Selection of payer and participants.
-- Selection of split method.
-- Item assignment.
-- Total and allocation validation.
-- Saving the confirmed bill.
-- Payment tracking after creation.
-- Manual-entry fallback.
-- Error message and retry flow.
-
-### 10.2 Conditionally In Scope
-
-The following fields may be included only when TV4 and TV5 confirm requirements and feasibility:
-
-- tax;
-- service charge;
-- tip;
-- discount or voucher;
-- OCR confidence indicator;
-- field-level warning state;
-- receipt image retention policy.
-
-### 10.3 Out of Scope for This Future-State Definition
-
-- Fully autonomous saving without human review.
-- Automatic bank transfer initiation.
-- Multiple payers for a single bill.
-- Cross-bill debt simplification.
-- AI payer rotation.
-- Group fund or wallet.
-- Multi-currency conversion.
-- Recurring bills.
-- Advanced analytics.
-- Dispute-resolution workflow.
-- Native mobile application.
-- Automatic interpretation of handwritten receipts unless separately validated.
-
----
-
-## 11. Scope Boundary Diagram
-
-````mermaid
+```mermaid
 flowchart LR
-    A[Receipt or bill information] --> B{Entry method}
-    B -->|Current| C[Manual data entry]
-    B -->|Future| D[AI receipt scan]
-    D --> E[AI-generated draft]
-    E --> F[Mandatory user review and correction]
-    C --> G[Select payer and participants]
-    F --> G
-    G --> H[Choose split method]
-    H --> I[Calculate and validate]
-    I --> J[Save bill]
-    J --> K[Track payment status]
-``` dd
+    USER["Users and groups"] --> SPLITLY["Proposed Splitly MVP"]
+    SPLITLY --> GEMINI["Gemini 2.5 Flash API"]
+    SPLITLY --> VIETQR["VietQR instructions"]
+    SPLITLY --> EMAIL["Email / notification provider"]
+    SPLITLY --> ATLAS[("MongoDB Atlas")]
+    USER --> BANK["User banking app"]
+    VIETQR -.-> BANK
 
----
+    subgraph MVP["Inside the product boundary"]
+      SPLITLY
+    end
 
-## 12. Assumptions
+    BANK -. "Transfer occurs outside Splitly" .-> USER
+```
 
-- The primary use case involves a single receipt for one social dining event.
-- A single user creates the bill.
-- One person is designated as the payer in the current data model.
-- Participants are identifiable through existing users or supported participant-selection mechanisms.
-- The user has access to the physical or digital receipt.
-- AI output is treated as a draft, not as authoritative financial data.
-- The user is responsible for confirming the final total and allocation.
-- Manual bill creation remains available after OCR is introduced.
+Splitly stores and presents application records. Gemini prepares a receipt draft, VietQR encodes payment instructions, and users move money through their own banks. A payment status in Splitly represents the approved declaration/confirmation workflow, not independent bank evidence.
 
----
+## 11. Assumptions
 
-## 13. Constraints
+- Naver is the organizational sponsor in the project context.
+- Six members can contribute approximately two working days per week for ten weeks.
+- The team can obtain and securely configure Gemini 2.5 Flash API access and suitable provider quotas for development and UAT.
+- Users have a modern browser, internet connection, email access, and a device capable of selecting or photographing a receipt.
+- The primary currency is VND and the primary interface language is Vietnamese.
+- UAT may use synthetic, anonymized, or consented receipt and payment data.
+- Vercel, Render, and MongoDB Atlas are sufficient for the demonstration baseline, subject to free-tier limits and cold-start behavior.
 
-- Receipt quality varies significantly.
-- Vietnamese receipt layouts are not standardized.
-- Item names may be abbreviated.
-- Totals may include tax, service charges, discounts, or rounding that are not represented as normal items.
-- OCR/AI provider cost or usage limits may restrict testing.
-- The current UI and data model may require changes to represent extraction confidence and receipt metadata.
-- Financial calculations require deterministic validation independent of AI output.
-- The future workflow must fit the team's approved schedule and available technical resources.
-````
+## 12. Constraints
+
+- The fixed ten-week schedule provides approximately 120 person-days of gross team capacity.
+- Receipt extraction quality varies by image, language, layout, and Gemini behavior.
+- JPG/JPEG, PNG, and WebP are the only planned MVP receipt formats, with a 10 MB maximum; PDF is deferred.
+- Bank details, receipt content, email, membership, and expense history require access control, redacted logs, and clear retention decisions.
+- External provider terms, quotas, prices, and availability may change.
+- Splitly cannot claim automatic transfer success or regulatory exemption merely because it does not hold funds.
+
+## 13. Future Backlog
+
+| Candidate | Reason for deferral |
+| --- | --- |
+| PDF receipt input | Requires a separate validation, rendering, security, and multi-page extraction contract. |
+| TingTing chatbot | Helpful but not necessary to complete the core expense-sharing workflow. |
+| Advanced reports | Depends on reliable bill/payment data and validated user demand. |
+| AI payer recommendation | Requires evidence of user value, explainability, and acceptable privacy behavior. |
+| Separate broker or independently extracted notification service | Add only when measured reliability, scale, or ownership needs exceed the MongoDB outbox and modular worker. |
+| Multiple payers and multi-currency | Require material changes to the domain and calculation model. |

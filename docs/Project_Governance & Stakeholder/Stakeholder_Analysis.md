@@ -8,24 +8,24 @@
 | :---- | :---- |
 | **Version** | 1.0 – Proposed baseline |
 | **Prepared on** | 15 July 2026 |
-| **Organizational Sponsor** | Naver/Naver Cloud – Naver AI Hackathon context |
+| **Organizational Sponsor** | Naver |
 
 # **1. Executive Summary**
 
-Splitly is a shared-expense web application for Vietnamese users. The product supports three bill-splitting methods—equal, by person, and by item—together with group management, debt tracking, payment reminders, VietQR transfers, payment confirmation, spending reports, real-time notifications, and an AI/OCR assistant from the CLOVA ecosystem.
+Splitly is a proposed shared-expense web application for Vietnamese users. The MVP is planned to support authentication, groups and members, manual entry, equal/by-person/by-item splitting, Gemini 2.5 Flash receipt drafts, item assignment, bill-level payment status, VietQR assistance, payment confirmation, reminders, and essential notifications.
 
 # **2. Sponsor Identification**
 
-| Sponsor | Naver/Naver Cloud – the organization associated with the Naver AI Hackathon context and the CLOVA platform used by the project. |
+| Sponsor | Naver – the organizational sponsor confirmed for the project context. |
 | :---- | :---- |
 | **Role** | Provide strategic sponsorship and resources; validate objectives; set priorities; remove organizational obstacles; and approve scope, milestones, and success criteria. |
 | **Authority** | Approve or reject the Project Charter; appoint the Project Manager/Product Owner; approve changes above the delegated threshold; make go/no-go decisions; and provide project-level acceptance. |
-| **Influence** | Very high – determines project legitimacy, priority, access to the CLOVA ecosystem, and demonstration/evaluation criteria. |
+| **Influence** | Very high – determines project legitimacy, priority, approved resources, and demonstration/evaluation criteria. |
 
 ## **2.1 Sponsor Expectations**
 
 * A product that solves a real problem by reducing errors and awkwardness when splitting expenses while making debt tracking transparent and fair.
-* A clear demonstration of AI/CLOVA value through the TingTing assistant and receipt-scanning flow, producing an editable draft that users review before saving.
+* A clear demonstration of useful and responsible AI through Gemini 2.5 Flash receipt scanning, producing an editable draft that users review before saving.
 * A Vietnamese-localized, responsive desktop/mobile experience that is stable enough for demonstration and UAT.
 * A safe and transparent payment flow: generate VietQR/payment instructions, let the payer declare payment, and let the recipient confirm it; Splitly does not hold funds.
 * An MVP delivered on schedule with measurable acceptance criteria and controls for personal-data and provider-dependency risks.
@@ -35,11 +35,11 @@ Splitly is a shared-expense web application for Vietnamese users. The product su
 
 | Stakeholder | Role/interest | Power | Interest | Desired engagement | Notes |
 | ----- | ----- | ----- | ----- | ----- | ----- |
-| Sponsor – Naver/Naver Cloud / Organizing Committee | Sponsorship, approval, direction | High | High | Leading / manage closely | Authorized signatory: TBD |
+| Sponsor – Naver / authorized representative | Sponsorship, approval, direction | High | High | Leading / manage closely | Authorized signatory: TBD |
 | Splitly Project Manager / Product Owner | Coordinate value, scope, and schedule | High | Very high | Leading / manage closely | Official assignee: TBD |
 | Splitly development team | Frontend, backend, UX, QA, DevOps | High | Very high | Leading / collaborate daily | Specific roles must be assigned |
-| End users | Young professionals, roommates, travel groups, clubs; members and guests | Medium | Very high | Supportive / keep informed and co-design | Source of needs and UAT evidence |
-| OCR/AI provider – Naver Cloud CLOVA Studio/ClovaX | Multimodal AI and chatbot APIs | High | Medium | Neutral / keep satisfied | Depends on keys, endpoints, quota, and model |
+| End users | Young professionals, roommates, travel groups, and clubs | Medium | Very high | Supportive / keep informed and co-design | Source of needs and UAT evidence |
+| AI provider – Google Gemini 2.5 Flash API | Multimodal receipt-extraction API | High | Medium | Neutral / keep satisfied | Depends on keys, endpoint, quota, terms, and model behavior |
 | VietQR provider – img.vietqr.io/VietQR | Generate transfer QR images from bank, account, and amount data | High | Low–medium | Neutral / keep satisfied | Not a payment gateway in the current system |
 | Email provider – SMTP/Nodemailer; legacy Brevo | Verification, reminders, payment confirmation | Medium | Low–medium | Neutral / monitor | Deliverability and secrets must be controlled |
 | Data/hosting provider – MongoDB/hosting | Storage, operation, and backup | High | Low–medium | Neutral / keep satisfied | Affects availability and security |
@@ -49,7 +49,7 @@ Splitly is a shared-expense web application for Vietnamese users. The product su
 
 ## **Sponsor**
 
-| Needs/expectations | Visibility into value, progress, risks, CLOVA usage, and acceptance evidence. |
+| Needs/expectations | Visibility into value, progress, risks, approved AI usage, and acceptance evidence. |
 | :---- | :---- |
 | **Responsibilities** | Appoint the PM/PO; approve the charter and baseline; sponsor resources; resolve escalations; and make go/no-go decisions. |
 | **Authority and influence** | Final approval authority; very high influence. |
@@ -75,12 +75,12 @@ Splitly is a shared-expense web application for Vietnamese users. The product su
 | **Responsibilities** | Provide feedback; participate in research/UAT; enter accurate bank information; and confirm transactions honestly. |
 | **Authority and influence** | Low–medium direct decision authority but very high influence on product fit and acceptance. |
 
-## **CLOVA/ClovaX Provider**
+## **Gemini API Provider**
 
-| Needs/expectations | Valid requests; compliant API, key, quota, and content usage; and incident handling through supported channels. |
+| Needs/expectations | Valid requests; compliant API, key, quota, data, and content usage; and incident handling through supported channels. |
 | :---- | :---- |
-| **Responsibilities** | Provide APIs, models, and documentation; announce changes/outages; and maintain security and the agreed SLA. |
-| **Authority and influence** | No project-governance authority, but high technical power because OCR/chatbot functions depend on the provider. |
+| **Responsibilities** | Provide the API, model access, documentation, usage reporting, and provider-side availability under the selected terms. |
+| **Authority and influence** | No project-governance authority, but high technical influence because the Gemini-assisted receipt path depends on the provider. |
 
 ## **VietQR Provider**
 
@@ -114,8 +114,8 @@ Splitly is a shared-expense web application for Vietnamese users. The product su
 
 |  | Low–medium interest | High interest |
 | ----- | ----- | ----- |
-| High power | **KEEP SATISFIED**<br>• CLOVA/ClovaX provider<br>• VietQR provider<br>• MongoDB/hosting<br>• Email provider<br><br>Strategy: monitor SLA, quota, and changes; avoid unnecessary disruption; maintain fallbacks. | **MANAGE CLOSELY**<br>• Sponsor/organizing committee<br>• PM/PO<br>• Development lead/core team<br>• Judges/acceptance representatives<br><br>Strategy: make joint decisions, hold checkpoints, report risks, and request approval at the correct threshold. |
-| Low–medium power | **MONITOR**<br>• Public outside the target group<br>• Interested non-users<br><br>Strategy: monitor general feedback and communicate when needed. | **KEEP INFORMED / INVOLVE**<br>• Member end users<br>• Guest users<br>• UAT/support users<br><br>Strategy: conduct interviews, usability tests, UAT, release notes, and feedback channels. |
+| High power | **KEEP SATISFIED**<br>• Gemini API provider<br>• VietQR provider<br>• Vercel/Render/MongoDB Atlas<br>• Email provider<br><br>Strategy: monitor quota, terms, availability, and changes; maintain fallbacks. | **MANAGE CLOSELY**<br>• Sponsor/authorized representative<br>• PM/PO<br>• Development lead/core team<br>• Judges/acceptance representatives<br><br>Strategy: make joint decisions, hold checkpoints, report risks, and request approval at the correct threshold. |
+| Low–medium power | **MONITOR**<br>• Public outside the target group<br>• Interested non-users<br><br>Strategy: monitor general feedback and communicate when needed. | **KEEP INFORMED / INVOLVE**<br>• Target end users<br>• UAT/support users<br><br>Strategy: conduct interviews, usability tests, UAT, release notes, and feedback channels. |
 
 # **6. Issues Requiring Discussion and Decision**
 
@@ -123,9 +123,9 @@ Splitly is a shared-expense web application for Vietnamese users. The product su
 | ----- | ----- | ----- | ----- | ----- |
 | 1 | Sponsor identity and authority | Who is the authorized signatory? Who decides go/no-go and major changes? | Sponsor/organizing committee | Before charter approval |
 | 2 | PM/PO and team roles | Who is ultimately accountable? Who serves as technical lead, QA, DevOps, and UX? | Sponsor + team lead | Week 1 |
-| 3 | Baseline scope | What is mandatory for the MVP and out of scope? What are the priorities of OCR, chatbot, reporting, and real-time features? | PM/PO + sponsor | Week 1 |
-| 4 | Schedule and budget | What are the start/end dates, resources, API/hosting costs, and contingency? | Sponsor + PM | Week 1 |
-| 5 | OCR/AI | Which model, quota, accuracy target, receipt test set, image-processing rights, retention, and manual fallback apply? | Technical lead + CLOVA + PO | Before integration |
+| 3 | Baseline scope | Confirm the recorded MVP and post-MVP boundaries remain unchanged after technical proof-of-concept work. | PM/PO + sponsor | Week 1 and Week 5 review |
+| 4 | Schedule and budget | Confirm the ten-week/120-person-day baseline, USD 360 direct estimate, and proposed USD 432 ceiling. | Sponsor + PM | Week 1 |
+| 5 | Gemini receipt input | Confirm quota, measured UAT target, receipt test set, data-processing terms, transient image policy, and manual fallback. | Technical lead + Gemini provider owner + PO | Before integration |
 | 6 | VietQR/payment | Is VietQR limited to QR generation? How are false payment claims, timeouts, bank failures, and legal messages handled? | PO + technical team + provider | Before payment UAT |
 | 7 | Security and privacy | How are PII, bank data, receipt images, JWTs, secrets, CORS, logs, and deletion rights handled? | Technical lead + sponsor | Before pilot |
 | 8 | Acceptance criteria | What splitting accuracy, UAT pass rate, OCR accuracy, performance, severity, and browser/device criteria apply? | PO + QA + sponsor | Before testing |
@@ -140,7 +140,7 @@ Splitly is a shared-expense web application for Vietnamese users. The product su
 | PM/PO + core team | Backlog, blockers, changes, tests, dependencies | Daily stand-up + board/chat | Daily | PM/Scrum Lead | Blockers older than 24 hours escalate to PM |
 | Development team | Design, API contract, code quality, release readiness | Repository issue/PR + technical sync | Per PR; sync twice weekly | Technical Lead | ADR/PR is the authoritative source |
 | End users/UAT | Prototype, usability, defects, acceptance | Interview/test session + survey | End of each increment and before release | PO/UX/QA | Obtain consent and anonymize feedback |
-| CLOVA provider | API changes, quota, errors/latency, security | Provider console/ticket/email | At integration milestones and during incidents | Technical Lead | P1: switch immediately to manual fallback |
+| Gemini provider | API changes, quota, errors/latency, privacy, and security | Provider console/support channel | At integration milestones and during incidents | Technical Lead | P1: switch immediately to manual fallback |
 | VietQR provider | URL format, availability, terms, QR failure | Documentation/status/ticket | Before UAT and during changes/incidents | Backend/Frontend Lead | Hide QR and show bank details on failure |
 | Email + hosting/data providers | Delivery, uptime, backup, capacity, secrets | Dashboard/log/ticket | Weekly; automated alerts | DevOps | P1: incident channel + PM |
 | Judges, lecturers, and advisors | Demonstration readiness, evidence, questions/feedback | Checkpoint/demonstration pack | By milestone/evaluation round | PM/PO | Meeting minutes + action list |

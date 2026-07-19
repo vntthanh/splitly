@@ -41,7 +41,7 @@ Receipt photo -> OCR output -> manual correction/copy into spreadsheet
 
 This works, but it creates a chain of handoffs. The organiser must interpret OCR output, maintain formulas, detect reciprocal debts, retype the net amount into a QR generator and reconcile payment evidence across chat, spreadsheet and bank app. The participant cannot reliably tell which number is provisional versus final. The detailed analysis is in [Existing_Tools_Analysis.md](Existing_Tools_Analysis.md).
 
-## 5. Competitor context and the debt-clearing contrast
+## 5. Competitor context and the MVP contrast
 
 Direct competitors confirm that shared-expense tracking has demand:
 
@@ -52,13 +52,13 @@ Direct competitors confirm that shared-expense tracking has demand:
 | Settle Up | Weighted splits, multiple people paid, reminders and minimized transfers. | Confirms the importance of complex settlement cases. |
 | Spliit | Open-source/no-account model, beta AI scan and reimbursement optimization. | Shows that receipt scanning alone is not a durable differentiator. |
 
-Splitwise officially describes `simplify debts` as restructuring debts within groups and friendships without changing each person's total balance, while reducing payment count. Splitly proposes a more explicit bilateral action: it will offset mutual bills and show one net balance. Thus, if A owes B 10,000 VND and B owes A 2,000 VND, it leaves A owing B 8,000 VND. This is an important capability because it turns multiple reciprocal obligations into one payment-ready amount.
+Splitwise officially describes `simplify debts` as restructuring debts within groups and friendships without changing each person's total balance while reducing payment count. This is a useful benchmark for Splitly's MVP debt-clearing capability: Splitly will calculate explainable cross-bill net payment instructions while preserving each confirmed bill, its participant obligations, and status.
 
-The contrast is not that Splitly has invented debt clearing. Splitwise is a mature benchmark. The rationale for Splitly is to combine an explainable local receipt result, bilateral netting and a VietQR request in one user journey. The detailed comparison is in [Competitor_Analysis.md](Competitor_Analysis.md).
+The rationale for Splitly is to combine an explainable local receipt result, bill-level allocation, payment confirmation, and a VietQR request in one user journey. The detailed comparison is in [Competitor_Analysis.md](Competitor_Analysis.md).
 
 ## 6. Proposed value and market gap
 
-> **Splitly helps Vietnamese groups turn a receipt into transparent personal balances, clear reciprocal debts, and create ready-to-pay VietQR requests.**
+> **Splitly helps Vietnamese groups turn a receipt into transparent bill-level obligations and ready-to-pay VietQR requests.**
 
 The specific gap is the integrated path below, rather than any individual technical component:
 
@@ -67,8 +67,7 @@ editable receipt data
   -> item and shared-dish assignment
   -> transparent VAT/service fee/discount allocation
   -> final personal balances
-  -> reciprocal-debt clearing where applicable
-  -> per-person VietQR payment request
+  -> per-person VietQR payment request for the confirmed bill
   -> paid/unpaid follow-up
 ```
 
@@ -76,13 +75,13 @@ This positioning is credible only if Splitly does three things better than a use
 
 - makes OCR an editable draft rather than an unexplained financial answer;
 - shows every participant why they owe the displayed amount; and
-- reduces the remaining payment to one correct, locally convenient request after netting reciprocal debts.
+- provides a correct, locally convenient request for the confirmed bill-level obligation.
 
 ## 7. Business value and reason for choosing Splitly
 
 | Value | Why it matters |
 | --- | --- |
-| Less payer coordination work | Receipt entry, allocation, debt clearing and payment request are connected rather than copied between tools. |
+| Less payer coordination work | Receipt entry, bill allocation, payment status, debt clearing, and payment request are connected rather than copied between tools. |
 | Greater trust | Transparent personal items, shared items and receipt adjustments reduce disputes. |
 | Fewer transfers | Reciprocal amounts can be offset to a single net obligation. |
 | Lower repayment friction | The final amount becomes a VietQR request instead of manually entered bank-transfer fields. |
@@ -93,7 +92,7 @@ The solution was chosen because it uses already available building blocks - OCR,
 
 ## 8. Proposal conclusion
 
-Splitly should proceed to product and technical validation as a focused receipt-to-settlement experience for Vietnamese groups. The project is justified not by the absence of competitors, but by the burden of linking their alternatives manually: OCR text, spreadsheet logic, chat coordination, debt clearing and bank payment exist separately today.
+Splitly should proceed to product and technical validation as a focused receipt-to-settlement experience for Vietnamese groups. The project is justified not by the absence of competitors, but by the burden of linking their alternatives manually: receipt extraction, spreadsheet logic, chat coordination, bill-level payment tracking, and bank payment exist separately today.
 
 The proposal's differentiating promise is simple: after a user verifies a receipt and allocations, Splitly shows a transparent final balance, clears reciprocal debt where possible and produces a VietQR request for the amount actually left to pay.
 
