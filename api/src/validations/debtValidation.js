@@ -21,7 +21,8 @@ const initiatePayment = async (req, res, next) => {
   const correctCondition = Joi.object({
     creditorId: Joi.string().required(),
     amount: Joi.number().positive().required(),
-    note: Joi.string().allow('').optional()
+    note: Joi.string().allow('').optional(),
+    priorityBill: Joi.string().optional().allow(null)
   })
 
   try {

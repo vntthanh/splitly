@@ -19,7 +19,7 @@ import { Close as CloseIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-m
 import { formatCurrency } from '~/utils/formatters'
 import { submitPaymentRequestAPI, fetchMutualBillsAPI, balanceDebtsAPI } from '~/apis'
 
-const PaymentDialog = ({ open, onClose, creditor, currentUserId, refetch }) => {
+const PaymentDialog = ({ open, onClose, creditor, currentUserId, priorityBill, refetch }) => {
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
@@ -124,7 +124,8 @@ const PaymentDialog = ({ open, onClose, creditor, currentUserId, refetch }) => {
       await submitPaymentRequestAPI(currentUserId, {
         creditorId: creditor._id || creditor.userId,
         amount: parseFloat(amount),
-        note: note.trim()
+        note: note.trim(),
+        priorityBill: priorityBill || null
       })
       await refetch()
       

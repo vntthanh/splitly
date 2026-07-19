@@ -13,6 +13,10 @@ import { sendBillCreationEmail } from '~/utils/emailService.js'
 
 const { BILL_COLLECTION_NAME } = billModel
 
+const getAudienceUserIds = (userIds = [], actorId) => [...new Set(
+  userIds.filter(Boolean).map((userId) => userId.toString()).filter((userId) => userId !== actorId?.toString())
+)]
+
 const createNew = async (reqBody) => {
   try {
     let paymentStatus = []
@@ -102,6 +106,7 @@ const createNew = async (reqBody) => {
           {
             billName: reqBody.billName,
             amount: reqBody.totalAmount,
+            audienceUserIds: getAudienceUserIds(reqBody.participants, reqBody.creatorId),
             description: `Created new bill: ${reqBody.billName}`,
           }
         )
@@ -399,6 +404,7 @@ const update = async (billId, updateData, updatedBy) => {
             description: originalBill.description,
           },
           newValue: updateData,
+          audienceUserIds: getAudienceUserIds(originalBill.participants, updatedBy),
           description: `Updated bill: ${originalBill.billName}`,
         })
       } catch (activityError) {
@@ -452,6 +458,7 @@ const markAsPaid = async (billId, userId, amountPaid, paidBy, skipNotification =
           billName: bill.billName,
           amountPaid: amountPaid,
           paymentStatus: 'paid',
+          audienceUserIds: getAudienceUserIds(bill.participants, paidBy),
           description: `Payment of ${amountPaid} for bill: ${bill.billName}`,
         })
       } catch (activityError) {
@@ -474,6 +481,7 @@ const markAsPaid = async (billId, userId, amountPaid, paidBy, skipNotification =
         try {
           await activityModel.logBillActivity(activityModel.ACTIVITY_TYPES.BILL_SETTLED, paidBy, billId, {
             billName: bill.billName,
+            audienceUserIds: getAudienceUserIds(bill.participants, paidBy),
             description: `Bill fully settled: ${bill.billName}`,
           })
         } catch (activityError) {
@@ -526,9 +534,10 @@ const optOutUser = async (billId, userId, optedOutBy) => {
     // Log opt-out activity
     if (optedOutBy) {
       try {
-        await activityModel.logBillActivity(activityModel.ACTIVITY_TYPES.BILL_USER_OPTED_OUT, optedOutBy, billId, {
+        await activityModel.logBillActivity(activityModel.ACTIVITY_TYPES.BILL_PARTICIPATION_DECLINED, optedOutBy, billId, {
           billName: bill.billName,
-          description: `User opted out from bill: ${bill.billName}`,
+          audienceUserIds: getAudienceUserIds(bill.participants, optedOutBy),
+          description: `Declined participation in bill: ${bill.billName}`,
         })
       } catch (activityError) {
         console.warn('Failed to log bill opt-out activity:', activityError.message)
@@ -559,6 +568,7 @@ const deleteOneById = async (billId, deletedBy) => {
         await activityModel.logBillActivity(activityModel.ACTIVITY_TYPES.BILL_DELETED, deletedBy, billId, {
           billName: bill.billName,
           amount: bill.totalAmount,
+          audienceUserIds: getAudienceUserIds(bill.participants, deletedBy),
           description: `Deleted bill: ${bill.billName}`,
         })
       } catch (activityError) {
@@ -615,6 +625,7 @@ const sendReminder = async (billId, reminderType, recipientUserId, sentByUserId)
           billName: bill.billName,
           reminderType: reminderType,
           recipientId: recipientUserId,
+          audienceUserIds: getAudienceUserIds([recipientUserId], sentByUserId),
           description: `Sent ${reminderType} reminder for bill: ${bill.billName}`,
         })
       } catch (activityError) {

@@ -65,14 +65,14 @@ const getDebtSummary = async (req, res, next) => {
 const initiatePayment = async (req, res, next) => {
   try {
     const { userId } = req.params
-    const { creditorId, amount, note } = req.body
+    const { creditorId, amount, note, priorityBill } = req.body
     
     // Security check: Verify that the authenticated user is initiating payment for themselves
     if (req.jwtDecoded._id !== userId) {
       throw new ApiError(StatusCodes.FORBIDDEN, 'You can only initiate payment for yourself')
     }
     
-    const result = await debtService.initiatePayment(userId, creditorId, amount, note)
+    const result = await debtService.initiatePayment(userId, creditorId, amount, note, priorityBill)
     
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
@@ -107,17 +107,19 @@ const confirmPayment = async (req, res, next) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
     }
 
-    // Mark as paid for each bill (partial or full)
+    // Only confirmed payments may alter bill balances.
     let remaining = amount
     const updatedBills = []
-    const { billService } = await import('~/services/billService.js')
-    for (const b of bills) {
-      if (remaining <= 0) break
-      const payAmount = Math.min(b.amount, remaining)
-      const result = await billService.markAsPaid(b.billId, debtorId, payAmount, userId)
-      if (result) {
-        updatedBills.push({ billId: b.billId, amountPaid: payAmount })
-        remaining -= payAmount
+    if (isConfirmed) {
+      const { billService } = await import('~/services/billService.js')
+      for (const billPayment of bills) {
+        if (remaining <= 0) break
+        const paidAmount = Math.min(billPayment.amount, remaining)
+        const result = await billService.markAsPaid(billPayment.billId, debtorId, paidAmount, userId)
+        if (result) {
+          updatedBills.push({ billId: billPayment.billId, amountPaid: paidAmount })
+          remaining -= paidAmount
+        }
       }
     }
 
@@ -126,7 +128,7 @@ const confirmPayment = async (req, res, next) => {
     // Generate a unique token for in-app confirmation (not used for validation, just to satisfy schema)
     const token = `inapp_${Date.now()}_${Math.random().toString(36).slice(2)}`
     await paymentConfirmationModel.createNew({
-      paymentId: updatedBills[0]?.billId || null,
+      paymentId: bills[0]?.billId || null,
       token,
       recipientId: userId,
       payerId: debtorId,
@@ -134,6 +136,26 @@ const confirmPayment = async (req, res, next) => {
       isConfirmed: !!isConfirmed
     })
 
+    // Record every approval and rejection as a separate audit event.
+    const { activityModel } = await import('~/models/activityModel.js')
+    await activityModel.createNew({
+      activityType: isConfirmed ? activityModel.ACTIVITY_TYPES.PAYMENT_CONFIRMED : activityModel.ACTIVITY_TYPES.PAYMENT_REJECTED,
+      userId,
+      resourceType: bills[0]?.billId ? 'bill' : 'user',
+      resourceId: bills[0]?.billId || debtorId,
+      details: {
+        amount,
+        note: note || '',
+        debtorName: debtor.name,
+        creditorName: creditor.name,
+        paymentId: bills[0]?.billId,
+        billId: bills[0]?.billId || null,
+        audienceUserIds: [debtorId],
+        description: isConfirmed
+          ? `Confirmed payment of ${amount} from ${debtor.name}`
+          : `Rejected payment of ${amount} from ${debtor.name}`
+      }
+    })
     // Send email notification to payer
     const { sendPaymentResponseEmail } = await import('~/utils/emailService.js')
     await sendPaymentResponseEmail({
@@ -225,6 +247,16 @@ const remindPayment = async (req, res, next) => {
       priorityBill: bill
     })
 
+    const reminderBill = debt.bills.find((entry) => entry.billId === bill) || debt.bills[0]
+    const { activityModel } = await import('~/models/activityModel.js')
+    await activityModel.logBillActivity(activityModel.ACTIVITY_TYPES.BILL_REMINDER_SENT, creditorId, reminderBill.billId, {
+      billName: reminderBill.billName,
+      amount: reminderBill.remainingAmount,
+      reminderType: 'email',
+      recipientId: debtorId,
+      audienceUserIds: [debtorId],
+      description: `Sent a payment reminder to ${debtor.name} for ${reminderBill.billName}`
+    })
     res.status(StatusCodes.OK).json({
       success: true,
       emailSent,

@@ -20,9 +20,11 @@ const ACTIVITY_TYPES = {
   BILL_SETTLED: 'bill_settled',
   BILL_REMINDER_SENT: 'bill_reminder_sent',
   BILL_USER_OPTED_OUT: 'bill_user_opted_out',
+  BILL_PARTICIPATION_DECLINED: 'bill_participation_declined',
   
   // Payment activities
   PAYMENT_INITIATED: 'payment_initiated',
+  PAYMENT_CONFIRMATION_REQUESTED: 'payment_confirmation_requested',
   PAYMENT_CONFIRMED: 'payment_confirmed',
   PAYMENT_REJECTED: 'payment_rejected',
   
@@ -82,6 +84,7 @@ const ACTIVITY_COLLECTION_SCHEMA = Joi.object({
     // For reminders
     reminderType: Joi.string().valid('email', 'notification', 'sms').optional(),
     recipientId: Joi.object().instance(ObjectId).optional(),
+    audienceUserIds: Joi.array().items(Joi.object().instance(ObjectId)).optional(),
     
     // Previous and new values for updates
     previousValue: Joi.object().optional(),
@@ -131,6 +134,13 @@ const convertIdsToObjectId = (data) => {
       converted.details.recipientId = new ObjectId(converted.details.recipientId)
     }
     
+    // Convert audience user IDs if they are valid ObjectIds
+    if (Array.isArray(converted.details.audienceUserIds)) {
+      converted.details.audienceUserIds = converted.details.audienceUserIds.map((userId) =>
+        typeof userId === 'string' && ObjectId.isValid(userId) ? new ObjectId(userId) : userId
+      )
+    }
+
     // Convert paymentId if it's a valid ObjectId
     if (converted.details.paymentId && typeof converted.details.paymentId === 'string' && ObjectId.isValid(converted.details.paymentId)) {
       converted.details.paymentId = new ObjectId(converted.details.paymentId)
@@ -339,8 +349,12 @@ const getActivitiesWithFilters = async (userId, filters = {}) => {
     const { limit = 10, offset = 0, types = null, dateFrom = null, dateTo = null } = filters
 
     // Build match query
+    const userObjectId = new ObjectId(userId)
     const matchQuery = {
-      userId: new ObjectId(userId),
+      $or: [
+        { userId: userObjectId },
+        { 'details.audienceUserIds': userObjectId }
+      ],
       _destroy: false
     }
 
@@ -415,8 +429,12 @@ const getActivityCountByUser = async (userId, filters = {}) => {
     const { types = null, dateFrom = null, dateTo = null } = filters
 
     // Build query
+    const userObjectId = new ObjectId(userId)
     const query = {
-      userId: new ObjectId(userId),
+      $or: [
+        { userId: userObjectId },
+        { 'details.audienceUserIds': userObjectId }
+      ],
       _destroy: false
     }
 

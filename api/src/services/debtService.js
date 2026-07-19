@@ -234,6 +234,27 @@ const initiatePayment = async (debtorId, creditorId, amount, note = '', priority
       }
     })
 
+    // Give the recipient their own activity entry. Activities are retrieved by
+    // owner, so recording only the payer's event would leave the recipient with
+    // no indication that a confirmation is required.
+    await activityModel.createNew({
+      activityType: activityModel.ACTIVITY_TYPES.PAYMENT_CONFIRMATION_REQUESTED,
+      userId: creditorId,
+      resourceType: priorityBill ? 'bill' : 'user',
+      resourceId: priorityBill || debtorId,
+      details: {
+        amount,
+        note,
+        paymentStatus: 'awaiting_confirmation',
+        paymentId: activity.insertedId,
+        billId: priorityBill || null,
+        debtorId,
+        debtorName: debtor.name,
+        creditorName: creditor.name,
+        debtorEmail: debtor.email,
+        creditorEmail: creditor.email
+      }
+    })
     // Generate payment confirmation token
     const paymentId = activity.insertedId.toString()
     const tokenPayload = {
@@ -382,7 +403,8 @@ const balanceDebts = async (userId1, userId2) => {
         totalUser1Owed: mutualBills.totalUser1Owes,
         totalUser2Owed: mutualBills.totalUser2Owes,
         netDebt,
-        billsMarkedPaid: billsMarkedPaid.length
+        billsMarkedPaid: billsMarkedPaid.length,
+        audienceUserIds: [userId2]
       }
     })
 

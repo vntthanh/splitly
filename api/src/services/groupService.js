@@ -8,6 +8,10 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { pickUser } from '~/utils/formatters'
 
+const getAudienceUserIds = (userIds = [], actorId) => [...new Set(
+  userIds.filter(Boolean).map((userId) => userId.toString()).filter((userId) => userId !== actorId?.toString())
+)]
+
 /**
  * Create a new group with activity logging
  * @param {Object} reqBody - Group data
@@ -41,6 +45,7 @@ const createNew = async (creatorId, reqBody) => {
     try {
       await activityModel.logGroupActivity(activityModel.ACTIVITY_TYPES.GROUP_CREATED, creatorId, groupIdString, {
         groupName: reqBody.groupName,
+        audienceUserIds: getAudienceUserIds(members, creatorId),
         description: `Created new group: ${reqBody.groupName}`,
       })
     } catch (activityError) {
@@ -130,6 +135,7 @@ const update = async (groupId, updateData, updatedBy) => {
             description: originalGroup.description,
           },
           newValue: updateData,
+          audienceUserIds: getAudienceUserIds(originalGroup.members, updatedBy),
           description: `Updated group: ${originalGroup.groupName}`,
         })
       } catch (activityError) {
@@ -164,6 +170,7 @@ const addMember = async (groupId, memberId, addedBy, memberEmail) => {
           groupName: group.groupName,
           memberId: memberId,
           memberEmail: memberEmail,
+          audienceUserIds: getAudienceUserIds([...group.members, memberId], addedBy),
           description: `Added member to group: ${group.groupName}`,
         })
       } catch (activityError) {
@@ -207,6 +214,7 @@ const removeMember = async (groupId, memberId, removedBy, memberEmail) => {
           groupName: group.groupName,
           memberId: memberId,
           memberEmail: memberEmail,
+          audienceUserIds: getAudienceUserIds([...group.members, memberId], removedBy),
           description: `Removed member from group: ${group.groupName}`,
         })
       } catch (activityError) {
@@ -249,6 +257,7 @@ const addBill = async (groupId, billId, addedBy, billName) => {
         await activityModel.logGroupActivity(activityModel.ACTIVITY_TYPES.GROUP_BILL_ADDED, addedBy, groupId, {
           groupName: group.groupName,
           billName: billName,
+          audienceUserIds: getAudienceUserIds(group.members, addedBy),
           description: `Added bill "${billName || 'Unknown'}" to group: ${group.groupName}`,
         })
       } catch (activityError) {
@@ -279,6 +288,7 @@ const deleteOneById = async (groupId, deletedBy) => {
       try {
         await activityModel.logGroupActivity(activityModel.ACTIVITY_TYPES.GROUP_DELETED, deletedBy, groupId, {
           groupName: group.groupName,
+          audienceUserIds: getAudienceUserIds(group.members, deletedBy),
           description: `Deleted group: ${group.groupName}`,
         })
       } catch (activityError) {
@@ -372,6 +382,7 @@ const updateGroup = async (groupId, reqBody, updatedBy) => {
             description: originalGroup.description,
           },
           newValue: updateData,
+          audienceUserIds: getAudienceUserIds(originalGroup.members, updatedBy),
           description: `Updated group: ${originalGroup.groupName}`,
         })
       } catch (activityError) {
@@ -379,6 +390,38 @@ const updateGroup = async (groupId, reqBody, updatedBy) => {
       }
     }
 
+    if (Array.isArray(updateData.members)) {
+      const originalMemberIds = originalGroup.members.map((memberId) => memberId.toString())
+      const updatedMemberIds = updateData.members.map((memberId) => memberId.toString())
+      const addedMemberIds = updatedMemberIds.filter((memberId) => !originalMemberIds.includes(memberId))
+      const removedMemberIds = originalMemberIds.filter((memberId) => !updatedMemberIds.includes(memberId))
+      const membershipAudience = [...new Set([...originalMemberIds, ...updatedMemberIds])]
+
+      await Promise.all([
+        ...addedMemberIds.map((memberId) => activityModel.logGroupActivity(
+          activityModel.ACTIVITY_TYPES.GROUP_MEMBER_ADDED,
+          updatedBy,
+          groupId,
+          {
+            groupName: originalGroup.groupName,
+            memberId,
+            audienceUserIds: getAudienceUserIds(membershipAudience, updatedBy),
+            description: 'Added a member to group: ' + originalGroup.groupName,
+          }
+        )),
+        ...removedMemberIds.map((memberId) => activityModel.logGroupActivity(
+          activityModel.ACTIVITY_TYPES.GROUP_MEMBER_REMOVED,
+          updatedBy,
+          groupId,
+          {
+            groupName: originalGroup.groupName,
+            memberId,
+            audienceUserIds: getAudienceUserIds(membershipAudience, updatedBy),
+            description: 'Removed a member from group: ' + originalGroup.groupName,
+          }
+        ))
+      ])
+    }
     return updatedGroup
   } catch (error) {
     throw error
@@ -397,6 +440,7 @@ const deleteGroup = async (groupId, deletedBy) => {
       try {
         await activityModel.logGroupActivity(activityModel.ACTIVITY_TYPES.GROUP_DELETED, deletedBy, groupId, {
           groupName: group.groupName,
+          audienceUserIds: getAudienceUserIds(group.members, deletedBy),
           description: `Deleted group: ${group.groupName}`,
         })
       } catch (activityError) {

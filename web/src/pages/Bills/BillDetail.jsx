@@ -1,6 +1,6 @@
 import Layout from '~/components/Layout'
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { useSelector } from 'react-redux'
 import { fetchBillByIdAPI } from '~/apis'
@@ -40,6 +40,7 @@ import RemindDialog from '~/pages/Debt/RemindDialog'
 const BillDetail = () => {
   const { billId } = useParams()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const currentUser = useSelector(selectCurrentUser)
   const [billData, setBillData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -129,6 +130,16 @@ const BillDetail = () => {
     setSelectedParticipant(participant)
     setConfirmDialogOpen(true)
   }
+
+  useEffect(() => {
+    if (searchParams.get('confirmPayment') !== '1' || !billData || !isBillOwner()) return
+    const participant = billData.participants.find((entry) => entry._id === searchParams.get('debtorId') && !entry.paid)
+    if (participant) {
+      setSelectedParticipant(participant)
+      setConfirmDialogOpen(true)
+    }
+    setSearchParams({}, { replace: true })
+  }, [billData, currentUser, searchParams, setSearchParams])
 
   const handleRemind = (debtor, billId) => {
     setSelectedRemindDebtor(debtor)
@@ -827,6 +838,7 @@ const BillDetail = () => {
         onClose={() => setPaymentDialogOpen(false)}
         creditor={selectedCreditor}
         currentUserId={currentUser?._id}
+        priorityBill={billId}
         refetch={refetchBillData}
       />
 
