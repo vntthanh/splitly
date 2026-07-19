@@ -192,5 +192,3 @@ This project was developed for the **Naver AI Hackathon** showcasing:
 ## 📄 **Available Scripts**
 
 See individual README files in `web/` and `api/` directories for detailed scripts and development guides.
-
-123
