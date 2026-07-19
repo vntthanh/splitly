@@ -47,10 +47,12 @@ export const createApp = ({ config, provider, store, logger }) => {
       }
 
       if (request.method === 'POST' && url.pathname === '/api/poc/receipts/process') {
+        console.log('\n[Step 1] Nhận ảnh hóa đơn: Bắt đầu parse multipart/form-data lấy buffer...');
         const image = await parseImageUpload(request, config.maxFileSizeBytes)
         logger.info('upload.received', { requestId, mimeType: image.mimeType, size: image.size })
         const result = await processingService.process(image, requestId)
         logger.info('request.completed', { requestId, billId: result.bill.id })
+        console.log('[Step 7] Trả kết quả về UI: Hoàn tất.');
         sendJson(response, 201, result)
         return
       }

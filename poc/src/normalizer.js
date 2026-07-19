@@ -51,6 +51,7 @@ const detectCurrency = (rawText) => {
 }
 
 const normalizeStructuredResult = (data, rawText, fallbackConfidence) => {
+  console.log('[Step 4] Trích xuất thông tin (từ JSON)...');
   const items = Array.isArray(data.items) ? data.items.map((item) => ({
     name: String(item.name ?? '').trim(),
     quantity: Number(item.quantity ?? 1),
@@ -65,6 +66,7 @@ const normalizeStructuredResult = (data, rawText, fallbackConfidence) => {
   const total = normalizeMoney(data.total ?? data.totalAmount) ?? subtotal - discount + tax + serviceFee
   const computedTotal = subtotal - discount + tax + serviceFee
   const merchantName = String(data.merchantName ?? data.billName ?? '').trim() || null
+  console.log('[Step 5] Validate dữ liệu và xử lý lỗi (từ JSON)...');
   const warnings = []
   if (!merchantName) warnings.push('MERCHANT_MISSING')
   if (items.length === 0) warnings.push('ITEMS_MISSING')
@@ -101,6 +103,7 @@ export const normalizeOcrResult = ({ rawText, confidence = null }) => {
       // Fall through so malformed model JSON is handled safely as raw OCR text.
     }
   }
+  console.log('[Step 4] Trích xuất thông tin (từ Raw Text)...');
   const lines = trimmedRawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   const itemLines = new Set(lines.filter((line) => line.includes('|')))
   const items = [...itemLines].map(parseItem).filter(Boolean)
@@ -119,6 +122,7 @@ export const normalizeOcrResult = ({ rawText, confidence = null }) => {
   const reportedTotal = normalizeMoney(findValue(lines, 'total'))
   const computedTotal = (reportedSubtotal ?? itemSum) - discount + tax + serviceFee
   const total = reportedTotal ?? computedTotal
+  console.log('[Step 5] Validate dữ liệu và xử lý lỗi (từ Raw Text)...');
   const warnings = []
 
   if (!merchantName) warnings.push('MERCHANT_MISSING')

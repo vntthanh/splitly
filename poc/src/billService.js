@@ -31,13 +31,17 @@ export const mapExtractedDataToBill = (extractedData, warnings = []) => {
 
 export const createReceiptProcessingService = ({ provider, store, logger }) => ({
   async process(image, requestId) {
+    console.log(`[Step 2] Gửi ảnh tới OCR service (provider: ${provider.name})...`);
     logger.info('ocr.started', { requestId, provider: provider.name })
     const ocr = await provider.recognize(image)
     logger.info('ocr.succeeded', { requestId, provider: provider.name, confidence: ocr.confidence })
+    console.log('[Step 3] Nhận và chuẩn hóa kết quả OCR...');
     const normalized = normalizeResult(ocr)
     logger.info('receipt.normalized', { requestId, itemCount: normalized.extractedData.items.length, warningCount: normalized.warnings.length })
+    console.log('[Step 6] Chuyển dữ liệu sang bill model...');
     const bill = mapExtractedDataToBill(normalized.extractedData, normalized.warnings)
     logger.info('bill.created', { requestId, billId: bill.id, status: bill.status })
+    console.log('[Step 7] Lưu database: Ghi vào file JSON tạm thời...');
     await store.create(bill)
     logger.info('bill.persisted', { requestId, billId: bill.id })
     return {
