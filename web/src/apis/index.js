@@ -1,7 +1,6 @@
 import authorizedAxiosInstance from '~/utils/authorizeAxios'
 import { API_ROOT } from '~/utils/constants'
 import { toast } from 'react-toastify'
-import { filter } from 'lodash'
 
 export const fetchDashboardDataAPI = async (userId) => {
   const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/dashboard/${userId}`)
@@ -317,68 +316,19 @@ export const confirmPaymentAPI = async (token, isConfirmed) => {
 // Assistant APIs
 // ============================================
 
-export const getAssistantResponseAPI = async (userId, messages) => {
-  // remove id and time field
-  // eslint-disable-next-line no-unused-vars
-  const leng = messages.length
-  // eslint-disable-next-line no-unused-vars
-  let reqMessages = messages.map(({ id, time, ...rest }) => rest)
-  reqMessages = filter(reqMessages, (msg) => msg.role !== 'notification')
+export const getAssistantResponseAPI = async (messages) => {
+  const reqMessages = messages
+    .filter((message) => message.role === 'user' || message.role === 'assistant')
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+    }))
 
-  console.log('Sending messages to Assistant API:', messages)
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/assistant`, {
-    userId,
     messages: reqMessages,
   })
 
-  let newMessages = response.data.messages
-
-  // merge messages and newMessages
-  let resMessages = []
-  try {
-    let i = 0,
-      j = 0
-    // console.log("Merging messages:", messages, newMessages);
-    while (i < messages.length && j < newMessages.length) {
-      // console.log("Comparing messages:", messages[i], newMessages[j]);
-      if (newMessages[j].role === 'system') {
-        j++
-      } else if (messages[i].role === 'system') {
-        i++
-      } else if (messages[i].role === newMessages[j].role && messages[i].content === newMessages[j].content) {
-        resMessages.push(messages[i])
-        i++
-        j++
-      } else if (messages[i].role === 'notification') {
-        resMessages.push(messages[i])
-        i++
-      } else if (newMessages[j].role === 'tool') {
-        j++
-      }
-
-      console.log('Current merged messages:', resMessages)
-    }
-    while (j < newMessages.length) {
-      if (newMessages[j].role === 'assistant') {
-        resMessages.push({
-          ...newMessages[j],
-          id: resMessages.length,
-          time:
-            new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
-            ' ' +
-            new Date().toLocaleDateString('vi-VN'),
-        })
-      }
-      j++
-    }
-  } catch (error) {
-    console.error('Error merging messages:', error)
-    // Fallback to just append newMessages
-  }
-
-  // console.log("Assistant API Response:", response);
-
-  return { newMessages: resMessages, navigation: response.data.navigation }
+  return response.data.data
 }
 
 // ============================================

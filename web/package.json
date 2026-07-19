@@ -55,8 +55,5 @@
     "tailwindcss": "^4.1.16",
     "vite": "^7.1.7"
   },
-  "allowScripts": {
-    "@swc/core@1.13.5": true,
-    "esbuild@0.28.1": true
-  }
+  "allowScripts": {}
 }

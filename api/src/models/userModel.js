@@ -187,6 +187,43 @@ const findManyByKeys = async (keys) => {
   }
 }
 
+const escapeRegex = (value) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+const findCandidatesByKey = async (key, limit = 5) => {
+  try {
+    if (typeof key !== 'string' || !key.trim()) {
+      return []
+    }
+
+    const escapedKey = escapeRegex(key.trim())
+    const exactPattern = `^${escapedKey}$`
+    const safeLimit = Math.min(Math.max(Number(limit) || 5, 1), 10)
+
+    return await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .find({
+        _destroy: false,
+        $or: [
+          { email: { $regex: exactPattern, $options: 'i' } },
+          { name: { $regex: exactPattern, $options: 'i' } },
+        ],
+      })
+      .project({
+        _id: 1,
+        name: 1,
+        email: 1,
+        userType: 1,
+        isGuest: 1,
+      })
+      .limit(safeLimit)
+      .toArray()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
@@ -199,5 +236,6 @@ export const userModel = {
   fetchUsers,
   findManyByIds,
   deleteOneById,
-  findManyByKeys
+  findManyByKeys,
+  findCandidatesByKey,
 }
