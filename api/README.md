@@ -13,7 +13,7 @@ A robust Node.js/Express API server for managing shared expenses, bill splitting
 
 ### 💰 **Bill Management**
 - **3 Bill Types**: Equal split, by-person split, and item-based split
-- **OCR Integration**: Receipt scanning with Clova Studio AI
+- **OCR Integration**: Vietnamese receipt scanning with Gemini 3 Flash
 - **Auto Calculations**: Smart amount distribution algorithms
 - **Payment Tracking**: Complete payment status monitoring
 - **Opt-out System**: Users can remove themselves from bills
@@ -40,7 +40,7 @@ A robust Node.js/Express API server for managing shared expenses, bill splitting
 
 ### 🤖 **AI Integration**
 - **Clova Studio Provider**: AI-powered chatbot assistance
-- **OCR Processing**: Intelligent receipt text extraction
+- **Gemini Provider**: Structured receipt OCR with Vietnamese diacritic support
 - **Smart Suggestions**: AI-powered expense categorization
 
 ## 🛠 Tech Stack
@@ -98,11 +98,14 @@ A robust Node.js/Express API server for managing shared expenses, bill splitting
    # Frontend URLs
    WEBSITE_DOMAIN=http://localhost:5173
    
-   # AI Integration
-   CLOVA_STUDIO_API_URL=your-clova-studio-url
-   CLOVA_STUDIO_API_KEY=your-clova-studio-key
-   CLOVA_STUDIO_CHAT_KEY=your-chat-key
-   CLOVA_STUDIO_CHAT_URL=your-chat-url
+   # Gemini receipt OCR (API key from Google AI Studio)
+   GEMINI_API_KEY=your-google-ai-studio-api-key
+   GEMINI_MODEL=gemini-3-flash-preview
+   GEMINI_TIMEOUT_MS=60000
+
+   # Optional Clova chatbot integration
+   NCP_API_KEY=your-naver-cloud-api-key
+   NCP_CLOVASTUDIO_ENDPOINT=your-clova-studio-endpoint
    ```
 
 3. **Start development server**
@@ -145,6 +148,7 @@ api/
 │   ├── providers/           # External service providers
 │   │   ├── BrevoEmailProvider.js
 │   │   ├── ClovaStudioProvider.js
+│   │   ├── GeminiProvider.js
 │   │   ├── JwtProvider.js
 │   │   └── NodemailerProvider.js
 │   ├── routes/              # API routes

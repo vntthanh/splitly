@@ -4,7 +4,7 @@ import { activityModel } from '~/models/activityModel.js'
 import { userModel } from '~/models/userModel.js'
 import { paymentModel } from '~/models/paymentModel.js'
 import { notificationService } from '~/services/notificationService.js'
-import { ClovaXClient } from '~/providers/ClovaStudioProvider'
+import { GeminiProvider } from '~/providers/GeminiProvider.js'
 import { JwtProvider } from '~/providers/JwtProvider.js'
 import { env } from '~/config/environment.js'
 import { GET_DB } from '~/config/mongodb'
@@ -1047,71 +1047,22 @@ const getMutualBills = async (userId1, userId2) => {
   }
 }
 
-const scanBill = async ({ userId, imageData }) => {
-  const client = new ClovaXClient()
+const scanBill = async ({ imageData }) => {
+  const gemini = new GeminiProvider()
+  const result = await gemini.extractReceipt(imageData)
 
-  const dataUriString = imageData
-
-  const messages = [
-    {
-      role: 'system',
-      content: [
-        {
-          type: 'text',
-          text: `
-You are an advanced OCR model specialized in extracting structured information from images of receipts and bills. 
-Your goal is to accurately read the text in the image and return a clean, structured JSON object representing the bill details. 
-Extract as much information as possible, including:
-
-- billName: The title or store name of the bill
-- paymentDate: The date "dd/mm/yyyy" of the transaction (if visible).
-- description: Any additional notes or remarks written on the bill
-- category: The category of the bill. It must be one of the following: "food", "utilities", "entertainment", "transportation", "shopping", "others".
-- items: A list of purchased products, each with:
-  - name: Product or service name
-  - quantity: Quantity of each item
-  - unitPrice: Price per unit
-  - amount: Total price per item
-- subtotal: The total amount before taxes or discounts
-- tax: Tax amount (if applicable)
-- discount: Discount amount (if applicable)
-- totalAmount: Final total to be paid
-- paymentMethod: How the payment was made (cash, card, etc.)
-
-Return only valid JSON. Do not include explanations or extra text.
-      `,
+  // Keep the existing response envelope so current OCR clients continue to work.
+  return {
+    response: {
+      provider: 'gemini',
+      model: result.model,
+      result: {
+        message: {
+          content: result.content,
         },
-      ],
+      },
     },
-    {
-      role: 'user',
-      content: [
-        {
-          type: 'image_url',
-          imageUrl: null,
-          dataUri: { data: dataUriString },
-        },
-        {
-          type: 'text',
-          text: 'Please extract all relevant information from this bill image and return it in JSON format.',
-        },
-      ],
-    },
-  ]
-
-  const request = {
-    messages,
-    topP: 0.8,
-    topK: 0,
-    maxTokens: 1000,
-    temperature: 0.5,
-    repetitionPenalty: 1.1,
-    stop: [],
   }
-
-  const response = await client.createChatCompletion(request)
-
-  return { response }
 }
 
 export const billService = {

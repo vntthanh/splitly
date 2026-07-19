@@ -36,6 +36,12 @@ services:
         value: Splitly
       - key: ADMIN_EMAIL_ADDRESS
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3-flash-preview
+      - key: GEMINI_TIMEOUT_MS
+        value: 60000
 
   - type: web
     name: splitly-web

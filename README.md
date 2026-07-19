@@ -116,7 +116,9 @@ ACCESS_JWT_SECRET_KEY=your-access-secret
 REFRESH_JWT_SECRET_KEY=your-refresh-secret
 WEBSITE_DOMAIN=http://localhost:5173
 BREVO_API_KEY=your-brevo-api-key
-CLOVA_STUDIO_API_KEY=your-clova-studio-key
+GEMINI_API_KEY=your-google-ai-studio-api-key
+GEMINI_MODEL=gemini-3-flash-preview
+GEMINI_TIMEOUT_MS=60000
 ```
 
 **Frontend** (web/.env):

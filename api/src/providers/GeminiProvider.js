@@ -18,6 +18,66 @@ const analysisSchema = {
   required: ['debtAdvice', 'oweAdvice', 'monthlyAdvice', 'productAdvice'],
 }
 
+const receiptSchema = {
+  type: 'object',
+  properties: {
+    billName: {
+      type: 'string',
+      description: 'Merchant or receipt title exactly as printed, preserving Vietnamese diacritics.',
+    },
+    paymentDate: {
+      type: 'string',
+      description: 'Transaction date in dd/mm/yyyy format when visible.',
+    },
+    description: { type: 'string' },
+    category: {
+      type: 'string',
+      enum: ['food', 'utilities', 'entertainment', 'transportation', 'shopping', 'other'],
+    },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Product or service name exactly as printed, preserving Vietnamese diacritics.',
+          },
+          quantity: { type: 'number' },
+          unitPrice: { type: 'number' },
+          amount: { type: 'number' },
+        },
+        required: ['name', 'quantity', 'unitPrice', 'amount'],
+      },
+    },
+    subtotal: { type: 'number' },
+    tax: { type: 'number' },
+    discount: { type: 'number' },
+    totalAmount: { type: 'number' },
+    paymentMethod: { type: 'string' },
+  },
+  required: ['billName', 'category', 'items', 'totalAmount'],
+}
+
+const RECEIPT_PROMPT = `Read this receipt and extract its structured bill data.
+
+The receipt may be Vietnamese. Preserve every Vietnamese character and diacritic exactly, including đ, ă, â, ê, ô, ơ, ư and tone marks. Do not translate merchant or product names.
+
+Use only information visible in the image. Never invent missing text or amounts. Return monetary values as JSON numbers with currency symbols and thousands separators removed. Vietnamese prices commonly use dots or spaces as thousands separators. Use quantity 1 when no quantity is printed. Use category "other" when no listed category clearly applies. Omit optional fields that cannot be determined reliably. Check that item amounts and the receipt total are internally consistent.`
+
+const parseImageDataUri = (imageData) => {
+  const match = /^data:(image\/(?:bmp|png|jpe?g|webp));base64,([A-Za-z0-9+/=\r\n]+)$/.exec(imageData)
+
+  if (!match) {
+    throw createProviderError('AI_INVALID_REQUEST', 'Gemini OCR requires a valid base64 image data URI')
+  }
+
+  return {
+    mimeType: match[1] === 'image/jpg' ? 'image/jpeg' : match[1],
+    data: match[2].replace(/\s/g, ''),
+  }
+}
+
 const removeSensitiveData = (data) =>
   JSON.parse(JSON.stringify(data, (key, value) => (SENSITIVE_FIELDS.has(key) ? undefined : value)))
 
@@ -255,4 +315,87 @@ ${JSON.stringify(removeSensitiveData(data))}`,
   }
 }
 
-export { GeminiClient }
+class GeminiProvider {
+  constructor({
+    apiKey = process.env.GEMINI_API_KEY,
+    model = process.env.GEMINI_MODEL || DEFAULT_MODEL,
+    timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
+  } = {}) {
+    if (!apiKey) {
+      throw createProviderError('AI_CONFIGURATION_ERROR', 'Missing required environment variable: GEMINI_API_KEY')
+    }
+
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+      throw createProviderError('AI_CONFIGURATION_ERROR', 'GEMINI_TIMEOUT_MS must be a positive number')
+    }
+
+    this.model = model
+    this.timeoutMs = timeoutMs
+    this.client = new GoogleGenAI({ apiKey })
+  }
+
+  async extractReceipt(imageData) {
+    const { mimeType, data } = parseImageDataUri(imageData)
+    const abortController = new AbortController()
+    const timeoutId = setTimeout(() => abortController.abort(), this.timeoutMs)
+
+    try {
+      const response = await this.client.models.generateContent({
+        model: this.model,
+        contents: [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType, data } },
+            { text: RECEIPT_PROMPT },
+          ],
+        }],
+        config: {
+          responseMimeType: 'application/json',
+          responseJsonSchema: receiptSchema,
+          maxOutputTokens: 4096,
+          thinkingConfig: {
+            thinkingLevel: 'minimal',
+          },
+          abortSignal: abortController.signal,
+        },
+      })
+      const text = response.text?.trim()
+
+      if (!text) {
+        throw createProviderError('AI_INVALID_RESPONSE', 'Gemini did not return OCR content')
+      }
+
+      let receipt
+      try {
+        receipt = JSON.parse(text)
+      } catch (error) {
+        throw createProviderError('AI_INVALID_RESPONSE', `Gemini returned malformed OCR JSON: ${error.message}`)
+      }
+
+      return {
+        content: JSON.stringify(receipt),
+        model: this.model,
+      }
+    } catch (error) {
+      if (abortController.signal.aborted) {
+        throw createProviderError('AI_TIMEOUT', `Gemini OCR did not respond within ${this.timeoutMs}ms`)
+      }
+
+      if (error.code?.startsWith('AI_')) throw error
+
+      const status = error.status || error.statusCode
+      if (status === 401 || status === 403) {
+        throw createProviderError('AI_PERMISSION_DENIED', 'Gemini API rejected the project or API key')
+      }
+      if (status === 429) {
+        throw createProviderError('AI_RATE_LIMITED', 'Gemini API rate limit exceeded')
+      }
+
+      throw createProviderError('AI_UNAVAILABLE', 'Failed to communicate with Gemini OCR')
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+}
+
+export { GeminiClient, GeminiProvider }
