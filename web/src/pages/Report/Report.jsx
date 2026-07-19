@@ -696,32 +696,32 @@ const Report = () => {
           </Card>
         ) : aiAnalysis ? (
           <>
-            {aiAnalysis.monthlyAdvice && (
+            {aiAnalysis.monthlyAdvice?.description && (
               <AIInsightCard
                 title="Dự đoán chi tiêu tháng tới"
-                description={aiAnalysis.monthlyAdvice}
-                suggestion="Dựa trên phân tích từ TingTing AI"
+                description={aiAnalysis.monthlyAdvice.description}
+                suggestion={aiAnalysis.monthlyAdvice.suggestion}
               />
             )}
-            {aiAnalysis.productAdvice && (
+            {aiAnalysis.productAdvice?.description && (
               <AIInsightCard
                 title="Phân tích chi tiêu theo danh mục"
-                description={aiAnalysis.productAdvice}
-                suggestion="Cân bằng chi tiêu giữa các danh mục"
+                description={aiAnalysis.productAdvice.description}
+                suggestion={aiAnalysis.productAdvice.suggestion}
               />
             )}
-            {aiAnalysis.debtAdvice && (
+            {aiAnalysis.debtAdvice?.description && (
               <AIInsightCard
                 title="Quản lý khoản nợ của bạn"
-                description={aiAnalysis.debtAdvice}
-                suggestion="Ưu tiên thanh toán đúng hạn"
+                description={aiAnalysis.debtAdvice.description}
+                suggestion={aiAnalysis.debtAdvice.suggestion}
               />
             )}
-            {aiAnalysis.oweAdvice && (
+            {aiAnalysis.oweAdvice?.description && (
               <AIInsightCard
                 title="Quản lý khoản cho vay"
-                description={aiAnalysis.oweAdvice}
-                suggestion="Nhắc nhở một cách lịch sự"
+                description={aiAnalysis.oweAdvice.description}
+                suggestion={aiAnalysis.oweAdvice.suggestion}
               />
             )}
           </>
